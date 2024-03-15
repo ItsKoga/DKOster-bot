@@ -148,6 +148,20 @@ class Get:
         else:
             return None
         
+    def hits(id):
+        throws = 0
+        hits = 0
+        for throw in Get.throws(id):
+            if throw.target_id == id:
+                throws += 1
+                if throw.success:
+                    hits += 1
+        
+        if hits:
+            return (throws, hits)
+        else:
+            return None
+        
 
     def cakes(id):
         class Cake:
