@@ -162,6 +162,13 @@ class Get:
         else:
             return None
         
+    def own_throws(id):
+        throws = Get.throws(id)
+        if throws:
+            return [throw for throw in throws if throw.thrower_id == id]
+        else:
+            return None
+        
 
     def cakes(id):
         class Cake:
