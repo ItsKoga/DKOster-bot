@@ -89,17 +89,26 @@ class Get:
         else:
             return None
         
+    def points(id):
+        #get amout of chocolate eggs
+        chocolate_eggs = 0
+        for egg in Get.eggs(id):
+            if egg.type == "Schokoei":
+                chocolate_eggs += 1
+        return chocolate_eggs
+        
     def egg(id):
         class Egg:
-            def __init__(self, id, owner_id, creator_id, type, is_rotton):
+            def __init__(self, id, owner_id, creator_id, type, is_rotton, time):
                 self.id = id
                 self.owner_id = owner_id
                 self.creator_id = creator_id
                 self.type = type
-                self.is_rotton = True if (is_rotton <= tm.time()-3600 and type == "ungekochtes Hühnerei" or is_rotton <= tm.time()-28800 and type == "gekochtes Hühnerei") else False
+                self.is_rotton = True if (is_rotton <= time-3600 and type == "ungekochtes Hühnerei" or is_rotton <= time-28800 and type == "gekochtes Hühnerei") else False
         egg = Database.execute_and_fetchone("SELECT * FROM eggs WHERE owner_id = %s", (id,))
+        time = tm.time()
         if egg:
-            return Egg(egg[0], egg[1], egg[2], egg[3], egg[4])
+            return Egg(egg[0], egg[1], egg[2], egg[3], egg[4], time)
         else:
             return None
         
@@ -132,7 +141,6 @@ class Get:
             return [GroupFight(group_fight[0], group_fight[1], group_fight[2], group_fight[3], group_fight[4], group_fight[5]) for group_fight in group_fights]
         else:
             return None
-
             
     def throws(id):
         class Throw:
@@ -169,7 +177,6 @@ class Get:
         else:
             return None
         
-
     def cakes(id):
         class Cake:
             def __init__(self, id, user_id):
