@@ -87,7 +87,8 @@ class Get:
         if user:
             return User(user[0], user[1], user[2], user[3], user[4])
         else:
-            return None
+            Add.user(id)
+            return User(id, 0, 0, 0, 0)
         
     def points(id):
         #get amout of chocolate eggs
@@ -190,7 +191,7 @@ class Get:
     
 class Add:
     def user(id):
-        Database.execute_and_commit("INSERT INTO users (user_id, last_hit, egg_talisman, rabbit_foot_count, user_rabbit_foot_count) VALUES (%s, %s, %s, %s, %s)", (id, tm.time(), 0, 0, 0))
+        Database.execute_and_commit("INSERT INTO users (user_id, last_hit, egg_talisman, rabbit_foot_count, user_rabbit_foot_count) VALUES (%s, %s, %s, %s, %s)", (id, 0, 0, 0, 0))
         
     def egg(id, type):
         Database.execute_and_commit("INSERT INTO eggs (owner_id, creator_id, type, is_rotton) VALUES (%s, %s, %s, %s)", (id, id, type, 0))
