@@ -37,6 +37,7 @@ Würfe : {len(throws)}/{len(own_hits)} `{round(len(throws)/len(own_hits),1)}%`\n
 Abgeworfen : {hits[0]}/{hits[1]} `{round(hits[0]/hits[1],1)}%`", inline=True)
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
+        await ctx.response.send_message(embed=embed)
 
 
 
