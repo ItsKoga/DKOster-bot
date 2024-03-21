@@ -100,12 +100,12 @@ class Get:
         
     def egg(id):
         class Egg:
-            def __init__(self, id, owner_id, creator_id, type, is_rotton, time):
+            def __init__(self, id, owner_id, creator_id, type, is_rotten, time):
                 self.id = id
                 self.owner_id = owner_id
                 self.creator_id = creator_id
                 self.type = type
-                self.is_rotton = True if (is_rotton <= time-3600 and type == "ungekochtes Hühnerei" or is_rotton <= time-28800 and type == "gekochtes Hühnerei") else False
+                self.is_rotten = True if (is_rotten <= time-3600 and type == "ungekochtes Hühnerei" or is_rotten <= time-28800 and type == "gekochtes Hühnerei") else False
         egg = Database.execute_and_fetchone("SELECT * FROM eggs WHERE owner_id = %s", (id,))
         time = tm.time()
         if egg:
@@ -194,7 +194,7 @@ class Add:
         Database.execute_and_commit("INSERT INTO users (user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count) VALUES (%s, %s, %s, %s, %s)", (id, 0, 0, 0, 0))
         
     def egg(id, type):
-        Database.execute_and_commit("INSERT INTO eggs (owner_id, creator_id, type, is_rotton) VALUES (%s, %s, %s, %s)", (id, id, type, 0))
+        Database.execute_and_commit("INSERT INTO eggs (owner_id, creator_id, type, is_rotten) VALUES (%s, %s, %s, %s)", (id, id, type, 0))
         
     def solo_fight(challenger_id, defender_id, chocolate_egg_bet, winner_id):
         Database.execute_and_commit("INSERT INTO egg_fights (challenger_id, defender_id, chocolate_egg_bet, winner_id) VALUES (%s, %s, %s, %s)", (challenger_id, defender_id, chocolate_egg_bet, winner_id))

@@ -8,6 +8,8 @@ import log_helper
 import system
 import random
 
+import time as tm
+
 log = log_helper.create("Game")
 
 
@@ -15,8 +17,21 @@ class Game(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    #Need to add the collect command here
+    @commands.Cog.listener()
+    async def on_application_command_error(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+        
+            if 0 <= tm.localtime().tm_hour < 6 and ctx.command.name != "leaderboard":
+                await ctx.response.send_message("Momentan versteckt der Osterhase neue Eier! Du kannst dich also bis 6:00 Uhr schlafen legen.", ephemeral=True)
+
+            if ctx.command.name == "collect":
+                await ctx.response.send_message(f"Du kannst erst <t:{int(tm.time()+error.retry_after)}:R> wieder nach Eiern suchen!", ephemeral=True)
+
+            else:
+                await ctx.response.send_message(f"So ein Pech! Du kannst erst <t:{int(tm.time()+error.retry_after)}:R> wieder `/{ctx.command.name}` nutzen!", ephemeral=True)
+
     @slash_command(name="collect", description="Geh auf Eiersuche")
+    @commands.cooldown(1, 120, commands.BucketType.user)
     async def collect(self, ctx):
         embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=discord.Color.blurple())
         embed.set_image(url="https://i.imgur.com/maC8seb.png")
@@ -58,7 +73,7 @@ class Game(commands.Cog):
                 embed.set_footer(text=f"Made by ItsKoga ❤")
 
                 await interaction.response.send_message(embed=embed)
-                
+
                 log(f"{ctx.author.name} hat {rewards.schokoei} Schokoeier, {rewards.gekochtesEi} gekochte Hühnereier, {rewards.ungekochtesEi} ungekochte Hühnereier, {rewards.egg_talisman} Eier Talisman und {rewards.rabbit_foot_count} Hasenpfoten gefunden!")        
                
                 for i in range(rewards.schokoei):
