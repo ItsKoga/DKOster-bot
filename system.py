@@ -76,12 +76,12 @@ class Database:
 class Get:
     def user(id):
         class User:
-            def __init__(self, id, last_hit, egg_talisman, rabbit_foot_count, user_rabbit_foot_count):
+            def __init__(self, id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count):
                 self.id = id
                 self.last_hit = last_hit
                 self.egg_talisman = egg_talisman
                 self.rabbit_foot_count = rabbit_foot_count
-                self.user_rabbit_foot_count = user_rabbit_foot_count
+                self.used_rabbit_foot_count = used_rabbit_foot_count
 
         user = Database.execute_and_fetchone("SELECT * FROM users WHERE user_id = %s", (id,))
         if user:
@@ -191,7 +191,7 @@ class Get:
     
 class Add:
     def user(id):
-        Database.execute_and_commit("INSERT INTO users (user_id, last_hit, egg_talisman, rabbit_foot_count, user_rabbit_foot_count) VALUES (%s, %s, %s, %s, %s)", (id, 0, 0, 0, 0))
+        Database.execute_and_commit("INSERT INTO users (user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count) VALUES (%s, %s, %s, %s, %s)", (id, 0, 0, 0, 0))
         
     def egg(id, type):
         Database.execute_and_commit("INSERT INTO eggs (owner_id, creator_id, type, is_rotton) VALUES (%s, %s, %s, %s)", (id, id, type, 0))
@@ -223,3 +223,36 @@ class Update:
 
     def egg_owner(id, owner_id):
         Database.execute_and_commit("UPDATE eggs SET owner_id = %s WHERE egg_id = %s", (owner_id, id))
+
+
+class Gen:
+    def nest(location, type=0, schokoei=0, gekochtesEi=0, ungekochtesEi=0, egg_talisman=0, rabbit_foot_count=0):
+        class Nest:
+            def __init__(self, location, type, schokoei, gekochtesEi, ungekochtesEi, egg_talisman, rabbit_foot_count):
+                self.location = location
+                self.type = type
+                self.schokoei = schokoei
+                self.gekochtesEi = gekochtesEi
+                self.ungekochtesEi = ungekochtesEi
+                self.egg_talisman = egg_talisman
+                self.rabbit_foot_count = rabbit_foot_count
+        return Nest(location, type, schokoei, gekochtesEi, ungekochtesEi, egg_talisman, rabbit_foot_count)
+
+
+class Translate:
+    def nest(nest):
+        if nest.type == "empty":
+            return "Nest leer"
+        else:
+            nest_info = ""
+            if nest.schokoei != 0:
+                nest_info += f"Schokoeier: {nest.schokoei}\n"
+            if nest.gekochtesEi != 0:
+                nest_info += f"Gekochte Eier: {nest.gekochtesEi}\n"
+            if nest.ungekochtesEi != 0:
+                nest_info += f"Ungekochte Eier: {nest.ungekochtesEi}\n"
+            if nest.egg_talisman != 0:
+                nest_info += f"Eier-Talisman\n"
+            if nest.rabbit_foot_count != 0:
+                nest_info += f"Hasenpfote\n"
+            return nest_info.strip()
