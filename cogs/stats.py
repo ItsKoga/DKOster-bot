@@ -22,19 +22,20 @@ class Stats(commands.Cog):
     @slash_command(name="stats", description="Zeigt die Stats eines Users an")
     async def stats(self, ctx, user: discord.Member = None):
         user = user if user else ctx.author
+        log(f"{ctx.author.name} hat die Stats von {user.name} angefordert!", "USER_ACTION")
 
         profile = system.Get.user(user.id)
         hits = system.Get.hits(user.id)
         throws = system.Get.own_throws(user.id)
-        own_hits = [throw for throw in throws if throw.success == True]
+        throws = throws if throws else []
+        own_hits = [throw for throw in throws if throw.success == True] if throws else []
         points = system.Get.points(user.id)
 
-        embed = discord.Embed(title="Stats", color=discord.Color.blurple())
-        embed.set_author(name=user.name, icon_url=user.avatar_url)
-        embed.add_field(name=f"Stats von {user.name}", value=f"Punkte : {points}\n\
+        embed = discord.Embed(title="Stats von {user.display_name}", 
+                              description= f"Punkte : {points}\n\
 Zuletzt getroffen : <t:{profile.last_hit}:R>\n\
-Würfe : {len(throws)}/{len(own_hits)} `{round(len(throws)/len(own_hits),1)}%`\n\
-Abgeworfen : {hits[0]}/{hits[1]} `{round(hits[0]/hits[1],1)}%`", inline=True)
+Würfe : {len(throws)}/{len(own_hits)} `{round(100/len(throws)*len(own_hits) if throws else 0,1)}%`\n\
+Abgeworfen : {hits[0]}/{hits[1]} `{round(100/hits[0]*hits[1]if hits[0] else 0,1)}%`", color=discord.Color.blurple())
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
         await ctx.response.send_message(embed=embed)

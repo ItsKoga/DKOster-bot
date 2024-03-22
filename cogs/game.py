@@ -33,6 +33,7 @@ class Game(commands.Cog):
     @slash_command(name="collect", description="Geh auf Eiersuche")
     @commands.cooldown(1, 120, commands.BucketType.user)
     async def collect(self, ctx):
+        log(f"{ctx.author.name} hat nach Eiern gesucht!", "USER_ACTION")
         embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=discord.Color.blurple())
         embed.set_image(url="https://i.imgur.com/maC8seb.png")
         embed.set_footer(text=f"Made by ItsKoga ❤")

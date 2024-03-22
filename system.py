@@ -13,8 +13,9 @@ class Database:
                 self.connection = None
                 self.cursor = None
                 self.connected = False
+                self.enter()
 
-            def __enter__(self):
+            def enter(self):
                 try:
                     self.connection = mysql.connector.connect(
                         host=os.getenv("DB_HOST"),
@@ -29,7 +30,7 @@ class Database:
                     print(f"Error while connecting to the database: {e}")
                     return self
 
-            def __exit__(self, exc_type, exc_val, exc_tb):
+            def close(self):
                 if self.connected:
                     self.connection.commit()
                     self.cursor.close()
@@ -39,38 +40,41 @@ class Database:
         return Connection()
     
     def execute_and_fetchall(query, values=None):
-        with Database.connect() as connection:
-            if connection.connected:
-                if values:
-                    connection.cursor.execute(query, values)
-                else:
-                    connection.cursor.execute(query)
-                return connection.cursor.fetchall()
+        connection = Database.connect()
+        if connection.connected:
+            if values:
+                connection.cursor.execute(query, values)
             else:
-                return None
+                connection.cursor.execute(query)
+            data = connection.cursor.fetchall()
+        else:
+            data = None
+        connection.close()
+        return data
+        
             
     def execute_and_commit(query, values=None):
-        with Database.connect() as connection:
-            if connection.connected:
-                if values:
-                    connection.cursor.execute(query, values)
-                else:
-                    connection.cursor.execute(query)
-                connection.connection.commit()
-                return connection.cursor.fetchall()
+        connection = Database.connect()
+        if connection.connected:
+            if values:
+                connection.cursor.execute(query, values)
             else:
-                return None
+                connection.cursor.execute(query)
+            connection.connection.commit()
+        connection.close()
             
     def execute_and_fetchone(query, values=None):
-        with Database.connect() as connection:
-            if connection.connected:
-                if values:
-                    connection.cursor.execute(query, values)
-                else:
-                    connection.cursor.execute(query)
-                return connection.cursor.fetchone()
+        connection = Database.connect()
+        if connection.connected:
+            if values:
+                connection.cursor.execute(query, values)
             else:
-                return None
+                connection.cursor.execute(query)
+            data = connection.cursor.fetchone()
+        else:
+            data = None
+        connection.close()
+        return data
             
 
 class Get:
@@ -97,6 +101,21 @@ class Get:
             if egg.type == "Schokoei":
                 chocolate_eggs += 1
         return chocolate_eggs
+    
+    def eggs(id):
+        class Egg:
+            def __init__(self, id, owner_id, creator_id, type, is_rotten, time):
+                self.id = id
+                self.owner_id = owner_id
+                self.creator_id = creator_id
+                self.type = type
+                self.is_rotten = True if (is_rotten <= time-3600 and type == "ungekochtes Hühnerei" or is_rotten <= time-28800 and type == "gekochtes Hühnerei") else False
+        eggs = Database.execute_and_fetchall("SELECT * FROM eggs WHERE owner_id = %s", (id,))
+        time = tm.time()
+        if eggs:
+            return [Egg(egg[0], egg[1], egg[2], egg[3], egg[4], time) for egg in eggs]
+        else:
+            return None
         
     def egg(id):
         class Egg:
@@ -151,7 +170,7 @@ class Get:
                 self.target_id = target_id
                 self.success = True if success == 1 else False
                 self.chocolate_egg_bet = chocolate_egg_bet
-        throws = Database.execute_and_fetchall("SELECT * FROM throws WHERE user_id = %s", (id,))
+        throws = Database.execute_and_fetchall("SELECT * FROM egg_throws WHERE thrower_id = %s OR target_id = %s", (id, id,))
         if throws:
             return [Throw(throw[0], throw[1], throw[2], throw[3], throw[4]) for throw in throws]
         else:
@@ -160,16 +179,17 @@ class Get:
     def hits(id):
         throws = 0
         hits = 0
-        for throw in Get.throws(id):
+        data = Get.throws(id)
+        print(data)
+        if not data:
+            return (0, 0)
+        for throw in data:
             if throw.target_id == id:
                 throws += 1
                 if throw.success:
                     hits += 1
         
-        if hits:
-            return (throws, hits)
-        else:
-            return None
+        return (throws, hits)
         
     def own_throws(id):
         throws = Get.throws(id)
@@ -203,7 +223,7 @@ class Add:
         Database.execute_and_commit("INSERT INTO group_fights (participants, chocolate_egg_bet, first_place_id, second_place_id, third_place_id) VALUES (%s, %s, %s, %s, %s)", (len(participants), chocolate_egg_bet, first_place_id, second_place_id, third_place_id))
         
     def throw(thrower_id, target_id, success, chocolate_egg_bet):
-        Database.execute_and_commit("INSERT INTO throws (thrower_id, target_id, success, chocolate_egg_bet) VALUES (%s, %s, %s, %s)", (thrower_id, target_id, success, chocolate_egg_bet))
+        Database.execute_and_commit("INSERT INTO egg_throws (thrower_id, target_id, success, chocolate_egg_bet) VALUES (%s, %s, %s, %s)", (thrower_id, target_id, success, chocolate_egg_bet))
         
     def cake(user_id):
         Database.execute_and_commit("INSERT INTO cakes (user_id) VALUES (%s)", (user_id,))
