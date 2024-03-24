@@ -102,12 +102,17 @@ class Get:
         return (cooked, uncooked)
         
     def points(id):
-        #get amout of chocolate eggs
         chocolate_eggs = 0
         for egg in Get.eggs(id):
             if egg.type == "Schokoei":
                 chocolate_eggs += 1
-        return chocolate_eggs
+
+        cakes = Get.cakes(id)
+        points = chocolate_eggs + len(cakes) * 10
+
+        Database.execute_and_commit("UPDATE users SET points = %s WHERE user_id = %s", (points, id))
+        return points
+    
     
     def eggs(id):
         class Egg:
@@ -254,6 +259,13 @@ class Add:
         
     def cake(user_id):
         Database.execute_and_commit("INSERT INTO cakes (user_id) VALUES (%s)", (user_id,))
+        #remove 10 chocolate eggs and 3 uncooked eggs
+        eggs = Get.type_eggs(user_id, "Schokoei")
+        for i in range(10):
+            Delete.egg(eggs[i].id)
+        eggs = Get.type_eggs(user_id, "ungekochtes Hühnerei")
+        for i in range(3):
+            Delete.egg(eggs[i].id)
 
 class Update:
     def user_last_hit(id):
