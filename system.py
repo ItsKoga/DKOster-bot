@@ -165,6 +165,20 @@ class Get:
             if egg.type == type and egg.is_rotten == False:
                 return egg
         return False
+    
+    def bake_check(id):
+        eggs = Get.eggs(id)
+        chocolate_eggs = 0
+        uncooked_eggs = 0
+        for egg in eggs:
+            if egg.type == "Schokoei":
+                chocolate_eggs += 1
+            elif egg.type == "ungekochtes Hühnerei":
+                uncooked_eggs += 1
+        if chocolate_eggs >= 10 and uncooked_eggs >= 3:
+            return True
+        else:
+            return False
         
     def solo_fights(id):
         class SoloFight:
