@@ -38,11 +38,11 @@ class Game(commands.Cog):
     async def collect(self, ctx):
         log(f"{ctx.author.name} hat nach Eiern gesucht!", "USER_ACTION")
         embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=discord.Color.blurple())
-        embed.set_image(url="https://i.imgur.com/maC8seb.png")
+        embed.set_image(url="https://i.imgur.com/AsSh0xY.png")
         embed.set_footer(text=f"Made by ItsKoga ❤")
     
         locations = {}
-        for location in ("Wald", "Wiese", "Höhle", "Hügel", "Teich"):
+        for location in ("1", "2", "3", "4", "5"):
             locations[location] = system.Gen.nest(location, ctx)
                         
         view = discord.ui.View()
@@ -53,10 +53,10 @@ class Game(commands.Cog):
                 if interaction.user.id != ctx.author.id:
                     return await interaction.response.send_message("Du kannst nicht für andere Leute sammeln!", ephemeral=True)
                 await interaction.message.edit(view=None)
-                embed = discord.Embed(title="Eiersuche", description=f"**{location.location}** (Deine Suche):\n{system.Translate.nest(location)}",color=discord.Color.blurple())
+                embed = discord.Embed(title="Eiersuche", description=f"**<:Eier_Nest:1221556705490636880> {location.location}** (Deine Suche):\n{system.Translate.nest(location)}",color=discord.Color.blurple())
                 for location_ in locations:
                     if location_ != location.location:
-                        embed.add_field(name=location_ + (f" ({locations[location_].type})" if locations[location_].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[location_]), inline=True)
+                        embed.add_field(name="<:Eier_Nest:1221556705490636880> "+location_ + (f" ({locations[location_].type})" if locations[location_].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[location_]), inline=True)
                     else:
                         rewards = locations[location_]
 
@@ -124,12 +124,17 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
 
             eggs = system.Get.type_eggs(ctx.user.id, "Schokoei")
             for i in range(reward):
-                system.Update.egg_owner(eggs[i].id, user.id)
+                if eggs[i]:
+                    system.Update.egg_owner(eggs[i].id, user.id)
+                else:
+                    reward = i 
+                    embed = discord.Embed(title="Eierwurf", description=f"Du hast ein Ei auf {user.name} geworfen und getroffen! Du hast {reward}`{percent}%` Schokoeier erhalten! Der rest war bei der Oma.", color=discord.Color.green())
             
             system.Update.user_last_hit(user.id)
             system.Delete.egg(check.id)
 
-            embed = discord.Embed(title="Eierwurf", description=f"Du hast ein Ei auf {user.name} geworfen und getroffen! Du hast {reward}`{percent}%` Schokoeier erhalten!", color=discord.Color.green())
+            if not embed:
+                embed = discord.Embed(title="Eierwurf", description=f"Du hast ein Ei auf {user.name} geworfen und getroffen! Du hast {reward}`{percent}%` Schokoeier erhalten!", color=discord.Color.green())
                 
         embed.set_footer(text=f"Made by ItsKoga ❤")
         await ctx.response.send_message(user.mention,embed=embed)

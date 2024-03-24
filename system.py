@@ -111,7 +111,7 @@ class Get:
         points = chocolate_eggs + len(cakes) * 10
 
         Database.execute_and_commit("UPDATE users SET points = %s WHERE user_id = %s", (points, id))
-        return points, chocolate_eggs, len(cakes)
+        return points
     
     
     def eggs(id):
@@ -342,11 +342,11 @@ class Translate:
         else:
             nest_info = ""
             if nest.schokoei != 0:
-                nest_info += f"Schokoeier: {nest.schokoei}\n"
+                nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284>\n"
             if nest.gekochtesEi != 0:
-                nest_info += f"Gekochte Eier: {nest.gekochtesEi}\n"
+                nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996>\n"
             if nest.ungekochtesEi != 0:
-                nest_info += f"Ungekochte Eier: {nest.ungekochtesEi}\n"
+                nest_info += f"{nest.ungekochtesEi}x :egg:\n"
             if nest.egg_talisman != 0:
                 nest_info += f"Eier-Talisman\n"
             if nest.rabbit_foot_count != 0:

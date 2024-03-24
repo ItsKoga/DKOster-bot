@@ -25,6 +25,8 @@ class Stats(commands.Cog):
         log(f"{ctx.author.name} hat die Stats von {user.name} angefordert!", "USER_ACTION")
 
         profile = system.Get.user(user.id)
+        chocolate_eggs = len([egg for egg in system.Get.type_eggs(user.id, "Schoko-Ei") if egg.is_rotten == False])
+        cakes = len(system.Get.cakes(user.id))
         cooked = len([egg for egg in system.Get.type_eggs(user.id, "gekochtes Hühnerei") if egg.is_rotten == False])
         uncooked = len([egg for egg in system.Get.type_eggs(user.id, "ungekochtes Hühnerei") if egg.is_rotten == False])
         hits = system.Get.hits(user.id)
@@ -37,8 +39,10 @@ class Stats(commands.Cog):
 
         embed = discord.Embed(title=f"Stats von {user.display_name}", 
                               description= f"Punkte : {points}\n\
-Ungekochte Eier : {uncooked}\n\
-Gekochte Eier : {cooked}\n\
+<:Schoko_Ei:1221556659030196284> : {chocolate_eggs}\n\
+:cake: : {cakes}\n\
+:egg: : {uncooked}\n\
+<:osterei:962802014226640996> : {cooked}\n\
 Zuletzt getroffen : {last_hit}\n\
 Würfe : {len(throws)}/{len(own_hits)} `{round(100/len(throws)*len(own_hits) if throws else 0,1)}%`\n\
 Abgeworfen : {hits[0]}/{hits[1]} `{round(100/hits[0]*hits[1]if hits[0] else 0,1)}%`", color=discord.Color.blurple())
