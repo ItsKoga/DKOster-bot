@@ -111,7 +111,7 @@ class Get:
         points = chocolate_eggs + len(cakes) * 10
 
         Database.execute_and_commit("UPDATE users SET points = %s WHERE user_id = %s", (points, id))
-        return points
+        return points, chocolate_eggs, len(cakes)
     
     
     def eggs(id):
@@ -253,7 +253,11 @@ class Get:
         if cakes:
             return [Cake(cake[0], cake[1]) for cake in cakes]
         else:
-            return None
+            return []
+        
+    def notifications(id):
+        notifications = Database.execute_and_fetchall("SELECT notifications FROM users WHERE user_id = %s", (id,))
+        return True if notifications[0][0] == 1 else False
     
 class Add:
     def user(id):
@@ -296,6 +300,9 @@ class Update:
 
     def egg_owner(id, owner_id):
         Database.execute_and_commit("UPDATE eggs SET owner_id = %s WHERE egg_id = %s", (owner_id, id))
+
+    def user_notifications(id, notifications):
+        Database.execute_and_commit("UPDATE users SET notifications = %s WHERE user_id = %s", (notifications, id))
 
 
 class Gen:

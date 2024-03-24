@@ -4,6 +4,7 @@ from discord.commands import slash_command, Option
 
 import os
 import math
+import asyncio
 
 import log_helper
 import system
@@ -61,7 +62,7 @@ class Game(commands.Cog):
 
                 embed.set_footer(text=f"Made by ItsKoga ❤")
 
-                await interaction.response.send_message(embed=embed)
+                await interaction.response.send_message(interaction.user.mention,embed=embed)
 
                 log(f"{ctx.author.name} hat {rewards.schokoei} Schokoeier, {rewards.gekochtesEi} gekochte Hühnereier, {rewards.ungekochtesEi} ungekochte Hühnereier, {rewards.egg_talisman} Eier Talisman und {rewards.rabbit_foot_count} Hasenpfoten gefunden!")        
                
@@ -77,6 +78,15 @@ class Game(commands.Cog):
                     system.Update.user_add_one_rabbit_foot_count(ctx.author.id)
                 
                 log(f"{ctx.author.name} wurden die Belohnungen hinzugefügt!", "SUCCESS")
+                system.Get.points(ctx.author.id)
+
+                await asyncio.sleep(120)
+                embed = discord.Embed(title="Du kannst wieder /collect ausführen!", description="Es ist fünf Minuten her, seitdem du Pukte für das Oster-Event gesammelt hast.\n\
+Führe jetzt wieder /collect im Channel <#platzhalter> aus!\n\n\
+Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping einfach mit dem /nofify Befehl.", color=discord.Color.random())
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                if system.Get.notifications(ctx.author.id):
+                    await interaction.user.send(embed=embed)
 
                 
 
@@ -123,6 +133,7 @@ class Game(commands.Cog):
                 
         embed.set_footer(text=f"Made by ItsKoga ❤")
         await ctx.response.send_message(user.mention,embed=embed)
+        system.Get.points(ctx.author.id)
         
 
     #Need to add the fight command here
@@ -132,6 +143,19 @@ class Game(commands.Cog):
         
 
     #Need to add the bake command here
+    @slash_command(name="bake", description="Backe ein gekochtes Hühnerei")
+    async def bake(self, ctx):
+        check = system.Get.bake_check(ctx.author.id)
+        if check == False:
+            embed = discord.Embed(title="Kuchen backen", description="Du hast nicht alle Zutaten, daher kann dir deine Oma nicht helfen!", color=discord.Color.red())
+            embed.add_field(name="Zutaten", value="3x Ungekochtes Hühnerei\n10x Schokoei")
+            embed.set_footer(text=f"Made by ItsKoga ❤")
+            return await ctx.response.send_message(embed=embed)
+        log(f"{ctx.author.name} hat ein kuchen gebacken!", "USER_ACTION")
+        system.Update.bake(ctx.author.id)
+        embed = discord.Embed(title="Kuchen backen", description="Deine Oma hat dir geholfen einen Kuchen zu backen! Da niemand von einer Oma klaut sind deine Punkte sicher!", color=discord.Color.green())
+        await ctx.response.send_message(embed=embed)
+        system.Get.points(ctx.author.id)
         
 
     @slash_command(name="talisman", description="Zeigt dir deinen Eier Talisman")
