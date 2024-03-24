@@ -10,6 +10,7 @@ import system
 import random
 
 import time as tm
+import discord
 
 log = log_helper.create("Game")
 
@@ -89,7 +90,7 @@ class Game(commands.Cog):
 
     #Need to add the throw command here
     @slash_command(name="throw", description="Wirf ein Ei auf jemanden")
-    async def throw(self, ctx, user: discord.Member):
+    async def throw(self, ctx, user: discord.User):
         if ctx.author.id == user.id:
             return await ctx.response.send_message("Du kannst nicht auf dich selbst werfen!", ephemeral=True)
         if user.bot:
@@ -133,9 +134,20 @@ class Game(commands.Cog):
     #Need to add the bake command here
         
 
-    #Need to add the talisman command here
-        
+    @slash_command(name="talisman", description="Zeigt dir deinen Eier Talisman")
+    async def talisman(self, ctx, richtung: Option(str, "Wähle welche Chance dein Talisman erhöhen soll", choices=["gekochtes Hühnerei", "ungekochtes Hühnerei"])):
+        profile = system.Get.user(ctx.author.id)
+        if profile.egg_talisman == 0:
+            return await ctx.response.send_message("Du hast noch keinen Eier Talisman!", ephemeral=True)
+        if richtung == "gekochtes Hühnerei":
+            system.Update.user_egg_talisman(ctx.author.id, 2)
+            await ctx.response.send_message("Dein Eier Talisman erhöht jetzt die Chance auf gekochte Hühnereier!", ephemeral=True)
+        else:
+            system.Update.user_egg_talisman(ctx.author.id, 1)
+            await ctx.response.send_message("Dein Eier Talisman erhöht jetzt die Chance auf ungekochte Hühnereier!", ephemeral=True)
+        log(f"{ctx.author.name} hat seinen Talisman geändert!", "USER_ACTION")
+            
 
-    
+        
 def setup(bot):
     bot.add_cog(Game(bot))
