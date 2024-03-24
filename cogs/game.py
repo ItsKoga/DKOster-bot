@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 from discord.commands import slash_command, Option
 
 import os
+import math
 
 import log_helper
 import system
@@ -40,21 +41,7 @@ class Game(commands.Cog):
     
         locations = {}
         for location in ("Wald", "Wiese", "Höhle", "Hügel", "Teich"):
-            type = random.choices(["empty", "normal", "special"], weights=[0.5, 0.4, 0.1])[0]
-            if type == "empty":
-                locations[location] = system.Gen.nest(location=location, type="empty")
-            elif type == "normal":
-                locations[location] = system.Gen.nest(location=location, type="normal",
-                                                           schokoei=random.randint(1, 10),
-                                                           gekochtesEi=0 if random.random() < 0.9 else random.randint(1, 2),
-                                                           ungekochtesEi=0 if random.random() < 0.1 else random.randint(1, 2))
-            elif type == "special":
-                locations[location] = system.Gen.nest(location=location, type="special",
-                                                           schokoei=random.randint(1, 10),
-                                                           gekochtesEi=random.randint(1, 2) if random.random() <= 0.9 else 0,
-                                                           ungekochtesEi=random.randint(1, 2) if random.random() <= 0.1 else 0,
-                                                           egg_talisman=1 if system.Get.user(ctx.author.id).egg_talisman or random.random() <= 0.1 else 0,
-                                                           rabbit_foot_count=1 if random.random() <= 0.25 else 0)
+            locations[location] = system.Gen.nest(location, ctx)
                         
         view = discord.ui.View()
 
@@ -98,11 +85,43 @@ class Game(commands.Cog):
         await ctx.response.send_message(embed=embed, view=view)
 
 
-
-
         
 
     #Need to add the throw command here
+    @slash_command(name="throw", description="Wirf ein Ei auf jemanden")
+    async def throw(self, ctx, user: discord.Member):
+        if ctx.author.id == user.id:
+            return await ctx.response.send_message("Du kannst nicht auf dich selbst werfen!", ephemeral=True)
+        if user.bot:
+            return await ctx.response.send_message("Du kannst nicht auf Bots werfen!", ephemeral=True)
+        check = system.Get.egg_check(ctx.author.id, "ungekochtes Hühnerei")
+        if check == False:
+            return await ctx.response.send_message("Du hast keine ungekochten Hühnereier!", ephemeral=True)
+        if system.Get.user(user.id).last_hit > tm.time()-300:
+            return await ctx.response.send_message("Dieser User wurde in den letzen 5 Minuten bereits abgeworfen!", ephemeral=True)
+        log(f"{ctx.author.name} hat ein Ei auf {user.name} geworfen!", "USER_ACTION")
+        
+        success = random.choice([0, 1])
+        system.Add.throw(ctx.author.id, user.id, success)
+        if success == 0:
+            embed = discord.Embed(title="Eierwurf", description=f"Du hast ein Ei auf {user.name} geworfen, aber es ist daneben gegangen!", color=discord.Color.red())
+
+        else:
+            points = system.Get.points(user.id)
+            percent = random.choices([1, 2, 3, 4, 5], weights=[0.5, 0.4, 0.3, 0.2, 0.1])[0]
+            reward = int(points/100*percent)
+
+            eggs = system.Get.type_eggs(ctx.user.id, "Schokoei")
+            for i in range(reward):
+                system.Update.egg_owner(eggs[i].id, user.id)
+            
+            system.Update.user_last_hit(user.id)
+            system.Delete.egg(check.id)
+
+            embed = discord.Embed(title="Eierwurf", description=f"Du hast ein Ei auf {user.name} geworfen und getroffen! Du hast {reward}`{percent}%` Schokoeier erhalten!", color=discord.Color.green())
+                
+        embed.set_footer(text=f"Made by ItsKoga ❤")
+        await ctx.response.send_message(user.mention,embed=embed)
         
 
     #Need to add the fight command here
