@@ -256,6 +256,25 @@ class Get:
         notifications = Database.execute_and_fetchall("SELECT notifications FROM users WHERE user_id = %s", (id,))
         return True if notifications[0][0] == 1 else False
     
+    def top(limit):
+        class User:
+            def __init__(self, id, points):
+                self.id = id
+                self.points = points
+        users = Database.execute_and_fetchall("SELECT user_id, points FROM users ORDER BY points DESC LIMIT %s", (limit,))
+        if users:
+            return [User(user[0], user[1]) for user in users]
+        else:
+            return None
+        
+    def top_position(id):
+        users = Get.top(1000)
+        for i, user in enumerate(users):
+            if user.id == str(id):
+                return i+1
+        return None
+    
+    
 class Add:
     def user(id):
         Database.execute_and_commit("INSERT INTO users (user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count) VALUES (%s, %s, %s, %s, %s)", (id, 0, 0, 0, 0))
@@ -301,6 +320,15 @@ class Update:
     def user_notifications(id, notifications):
         Database.execute_and_commit("UPDATE users SET notifications = %s WHERE user_id = %s", (notifications, id))
 
+    def leaderboard(limit):
+        users = Get.top(limit)
+        for i, user in enumerate(users):
+            points = Get.points(user.id)
+            Database.execute_and_commit("UPDATE users SET points = %s WHERE user_id = %s", (points, user.id))
+
+        return True
+            
+
 
 class Gen:
     def nest(location, ctx):
@@ -335,7 +363,7 @@ class Gen:
 class Translate:
     def nest(nest):
         if nest.type == "empty":
-            return "Nest leer"
+            return "Luft"
         else:
             nest_info = ""
             if nest.schokoei != 0:
@@ -349,6 +377,16 @@ class Translate:
             if nest.rabbit_foot_count != 0:
                 nest_info += f"Hasenpfote\n"
             return nest_info.strip()
+        
+
+    def leaderboard(top):
+        string = ""
+        top = Get.top(top)
+        for i, user in enumerate(top):
+            string += f"{i+1}. <@{user.id}> - {user.points}\n"
+        
+        return string.strip()
+
         
 class Delete:
     def egg(id):

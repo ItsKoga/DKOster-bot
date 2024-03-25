@@ -18,6 +18,12 @@ class Stats(commands.Cog):
         self.bot = bot
         self.start_time = tm.time()
 
+        @tasks.loop(seconds=5)
+        async def update_lb():
+            system.Update.leaderboard(25)
+        
+        update_lb.start()
+
 
     @slash_command(name="stats", description="Zeigt die Stats eines Users an")
     async def stats(self, ctx, user: discord.User = None):
@@ -46,6 +52,18 @@ class Stats(commands.Cog):
 Zuletzt getroffen : {last_hit}\n\
 Würfe : {len(throws)}/{len(own_hits)} `{round(100/len(throws)*len(own_hits) if throws else 0,1)}%`\n\
 Abgeworfen : {hits[0]}/{hits[1]} `{round(100/hits[0]*hits[1]if hits[0] else 0,1)}%`", color=discord.Color.blurple())
+        embed.set_footer(text=f"Made by ItsKoga ❤")
+
+        await ctx.response.send_message(embed=embed)
+
+
+
+
+    @slash_command(name="leaderboard", description="Zeigt die Top 10 der User an")
+    async def leaderboard(self, ctx):
+        log(f"{ctx.author.name} hat die Leaderboard angefordert!", "USER_ACTION")
+
+        embed = discord.Embed(title="Leaderboard", description=system.Translate.leaderboard(10) + f"\n\n{system.Get.top_position(ctx.author.id)}. Du - {system.Get.points(ctx.author.id)}", color=discord.Color.blurple())
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
         await ctx.response.send_message(embed=embed)
