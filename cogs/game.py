@@ -142,12 +142,79 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         
 
     #Need to add the fight command here
+    @slash_command(name="fight", description="Fordere jemanden zum Kampf heraus")
+    async def fight(self, ctx, user: discord.User, bet: int):
+        if ctx.author.id == user.id:
+            return await ctx.response.send_message("Du kannst nicht gegen dich selbst kämpfen!", ephemeral=True)
+        if user.bot:
+            return await ctx.response.send_message("Du kannst nicht gegen Bots kämpfen!", ephemeral=True)
+        if bet < 1:
+            return await ctx.response.send_message("Du musst mindestens 1 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
+        if len(system.Get.type_eggs(ctx.author.id, "Schokoei")) < bet:
+            return await ctx.response.send_message("Du hast nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
+        if len(system.Get.type_eggs(user.id, "Schokoei")) < bet:
+            return await ctx.response.send_message("Dein Gegner hat nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
+        if system.Get.egg_check(ctx.author.id, "gekochtes Hühnerei") == False:
+            return await ctx.response.send_message("Du hast kein <:osterei:962802014226640996>!", ephemeral=True)
+        if system.Get.egg_check(user.id, "gekochtes Hühnerei") == False:
+            return await ctx.response.send_message("Dein Gegner hat kein <:osterei:962802014226640996>!", ephemeral=True)
+        log(f"{ctx.author.name} hat {user.name} zum Kampf herausgefordert!", "USER_ACTION")
+
+        embed = discord.Embed(title="Kampf Anfrage", description=f"{ctx.author.mention} hat dich zu einem Kampf herausgefordert! Möchtest du annehmen?", color=discord.Color.blurple())
+        embed.set_footer(text=f"Made by ItsKoga ❤")
+        class View(discord.ui.View):
+            def __init__(self):
+                super().__init__()
+                self.value = None
+
+            @discord.ui.button(label="Annehmen", style=discord.ButtonStyle.success)
+            async def accept(self, button: discord.ui.Button, interaction: discord.Interaction):
+                self.value = True
+                self.disable_all_items()
+                await interaction.message.edit(view=self)
+
+                winner = random.choice([ctx.author.id, user.id])
+                looser = ctx.author.id if winner == user.id else user.id
+                embed = discord.Embed(title="Kampf", description=f"{ctx.author.mention} und {user.mention} kämpfen!", color=discord.Color.blurple())
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                await interaction.response.send_message(embed=embed)
+
+                system.Add.solo_fight(ctx.author.id, user.id, bet, winner)
+                eggs = system.Get.type_eggs(ctx.author.id, "Schokoei")
+
+                if len(eggs) < bet:
+                    embed = discord.Embed(title="Error", description=f"{ctx.author.mention} hat nicht mehr genug <:Schoko_Ei:1221556659030196284>!", color=discord.Color.red())
+                    embed.set_footer(text=f"Made by ItsKoga ❤")
+                    return await interaction.original_response.edit_message(embed=embed)
+                
+                for i in range(bet):
+                    system.Update.egg_owner(eggs[i].id, winner)
+                system.Delete.egg(system.Get.egg_check(looser, "gekochtes Hühnerei").id)
+                        
+                await asyncio.sleep(5)
+                embed = discord.Embed(title="Kampf", description=f"<@{winner}> hat den Kampf gewonnen!\n\
+Er erhält {bet}x <:osterei:962802014226640996> von <@{looser}>.", color=discord.Color.green())
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                await interaction.edit_original_response(embed=embed)
+            
+            
+            @discord.ui.button(label="Ablehnen", style=discord.ButtonStyle.danger)
+            async def decline(self, button: discord.ui.Button, interaction: discord.Interaction):
+                self.value = False
+                self.disable_all_items()
+                await interaction.message.edit(view=self)
+                await interaction.response.send_message("Kampf Anfrage wurde abgelehnt!",)
+
+        view = View()
+        await ctx.response.send_message(user.mention, embed=embed, view=view)
+        system.Get.points(ctx.author.id)
+        system.Get.points(user.id)
+
         
 
     #Need to add the group_fight command here
         
 
-    #Need to add the bake command here
     @slash_command(name="bake", description="Backe ein gekochtes Hühnerei")
     async def bake(self, ctx):
         check = system.Get.bake_check(ctx.author.id)

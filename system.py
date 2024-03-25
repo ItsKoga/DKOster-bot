@@ -102,10 +102,7 @@ class Get:
         return (cooked, uncooked)
         
     def points(id):
-        chocolate_eggs = 0
-        for egg in Get.eggs(id):
-            if egg.type == "Schokoei":
-                chocolate_eggs += 1
+        chocolate_eggs = len(Get.type_eggs(id, "Schokoei"))
 
         cakes = Get.cakes(id)
         points = chocolate_eggs + len(cakes) * 10
@@ -348,7 +345,7 @@ class Translate:
             if nest.ungekochtesEi != 0:
                 nest_info += f"{nest.ungekochtesEi}x :egg:\n"
             if nest.egg_talisman != 0:
-                nest_info += f"Eier-Talisman\n"
+                nest_info += f"Eier Talisman\n"
             if nest.rabbit_foot_count != 0:
                 nest_info += f"Hasenpfote\n"
             return nest_info.strip()
