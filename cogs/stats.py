@@ -31,7 +31,7 @@ class Stats(commands.Cog):
         log(f"{ctx.author.name} hat die Stats von {user.name} angefordert!", "USER_ACTION")
 
         profile = system.Get.user(user.id)
-        chocolate_eggs = len([egg for egg in system.Get.type_eggs(user.id, "Schoko-Ei") if egg.is_rotten == False])
+        chocolate_eggs = system.Get.type_eggs(user.id, "Schokoei")
         cakes = len(system.Get.cakes(user.id))
         cooked = len([egg for egg in system.Get.type_eggs(user.id, "gekochtes Hühnerei") if egg.is_rotten == False])
         uncooked = len([egg for egg in system.Get.type_eggs(user.id, "ungekochtes Hühnerei") if egg.is_rotten == False])

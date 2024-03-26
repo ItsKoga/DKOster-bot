@@ -24,7 +24,7 @@ class Settings(commands.Cog):
     async def notify(self, ctx):
         log(f"{ctx.author.name} hat die Benachrichtigungen umgestellt!", "USER_ACTION")
 
-        await ctx.response.send_message(f"Benachrichtigungen wurden {'aktiviert' if not system.Get.notifications(ctx.author.id) else 'deaktiviert'}!")
+        await ctx.response.send_message(f"Benachrichtigungen wurden {'aktiviert' if not system.Get.notifications(ctx.author.id) else 'deaktiviert'}!", ephemeral=True)
         system.Update.user_notifications(ctx.author.id, not system.Get.notifications(ctx.author.id))
 
 
