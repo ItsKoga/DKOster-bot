@@ -274,6 +274,14 @@ class Get:
                 return i+1
         return None
     
+    def group_fight_check(id):
+        #get the last_fight from the database
+        last_fight = Database.execute_and_fetchone("SELECT last_fight FROM users WHERE user_id = %s", (id,))
+        if last_fight[0][0] <= tm.time()-300:
+            return True
+        else:
+            return False
+    
     
 class Add:
     def user(id):
@@ -325,8 +333,9 @@ class Update:
         for i, user in enumerate(users):
             points = Get.points(user.id)
             Database.execute_and_commit("UPDATE users SET points = %s WHERE user_id = %s", (points, user.id))
-
-        return True
+    
+    def last_fight(id):
+        Database.execute_and_commit("UPDATE users SET last_fight = %s WHERE user_id = %s", (tm.time(), id))
             
 
 

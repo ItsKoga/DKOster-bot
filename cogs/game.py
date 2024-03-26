@@ -98,7 +98,6 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
 
         
 
-    #Need to add the throw command here
     @slash_command(name="throw", description="Wirf ein Ei auf jemanden")
     async def throw(self, ctx, user: discord.User):
         if ctx.author.id == user.id:
@@ -141,7 +140,6 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         system.Get.points(ctx.author.id)
         
 
-    #Need to add the fight command here
     @slash_command(name="fight", description="Fordere jemanden zum Kampf heraus")
     async def fight(self, ctx, user: discord.User, bet: int):
         if ctx.author.id == user.id:
@@ -213,7 +211,115 @@ Er erhält {bet}x <:osterei:962802014226640996> von <@{looser}>.", color=discord
         
 
     #Need to add the group_fight command here
-        
+    @slash_command(name="group_fight", description="Starte einen Gruppenkampf")
+    async def group_fight(self, ctx, bet: int):
+        if bet < 1:
+            return await ctx.response.send_message("Du musst mindestens 1 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
+        if len(system.Get.type_eggs(ctx.author.id, "Schokoei")) < bet:
+            return await ctx.response.send_message("Du hast nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
+        if system.Get.egg_check(ctx.author.id, "gekochtes Hühnerei") == False:
+            return await ctx.response.send_message("Du hast kein <:osterei:962802014226640996>!", ephemeral=True)
+        log(f"{ctx.author.name} hat einen Gruppenkampf gestartet!", "USER_ACTION")
+
+        class View(discord.ui.View):
+            def __init__(self):
+                super().__init__()
+                self.value = []
+                self.timeout = 60
+
+            async def on_timeout(self):
+                await self.edit_original_response(view=None)
+                if len(self.value) < 4:
+                    return await ctx.response.send_message("Nicht genug Spieler für den Gruppenkampf!", ephemeral=True)
+                
+                embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!", color=discord.Color.blurple())
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                await ctx.response.send_message(embed=embed)
+                rewards = [int(bet*0.6), int(bet*0.25), int(bet*0.15)]
+                if sum(rewards) < bet*len(self.value):
+                    rewards[0] += sum(rewards) - bet*len(self.value)
+                if sum(rewards) > bet*len(self.value):
+                    rewards[0] += sum(rewards) - bet*len(self.value)
+                top = []
+                while len(self.value) > 1:
+                    player1 = random.choice(self.value)
+                    player2 = random.choice([player for player in self.value if player != player1])
+                    winner = random.choice([player1, player2])
+                    looser = player1 if winner == player2 else player2
+                    top.append(looser)
+                    self.value.remove(looser)
+                    system.Delete.egg(system.Get.egg_check(looser, "gekochtes Hühnerei").id)
+                    embed = discord.Embed(title="Gruppenkampf", description=f"<@{player1}> und <@{player2}> kämpfen!", color=discord.Color.blurple())
+                    embed.set_footer(text=f"Made by ItsKoga ❤")
+                    if not msg:
+                        msg = await self.original_response.respond(embed=embed)
+                    else:
+                        await msg.edit(embed=embed)
+                    await asyncio.sleep(3)
+
+                    embed = discord.Embed(title="Gruppenkampf", description=f"<@{winner}> hat den Kampf gewonnen!\n\
+<@{looser}> ist auf Platz {len(self.value)+1} ausgeschieden!", color=discord.Color.green())
+
+                    await msg.edit(embed=embed)
+                    self.value.remove(looser)
+                    await asyncio.sleep(3)
+
+                embed = discord.Embed(title="Gruppenkampf", description=f"<@{self.value[0]}> hat den Gruppenkampf gewonnen!\n\
+Er erhält {rewards[0]}x <:Schoko_Ei:1221556659030196284>!", color=discord.Color.green())
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                await msg.edit(embed=embed)
+
+                participants = [self.value[0]] + top
+                eggs = []
+                for i in range(len(participants)):
+                    for j in range(rewards[i]):
+                        eggs.append(participants[i])
+
+                for i in range(3):
+                    for j in range(rewards[i]):
+                        system.Update.egg_owner(eggs[0].id, participants[i])
+                        eggs.remove(eggs[0])
+                    system.Get.points(participants[i])
+
+                embed = discord.Embed(title="Gruppenkampf", description=f"<@{self.value[0]}> hat den Gruppenkampf gewonnen!\n\
+Er erhält {rewards[0]}x <:Schoko_Ei:1221556659030196284>!\n\
+<@{top[0]}> erhält {rewards[1]}x <:Schoko_Ei:1221556659030196284>!\n\
+<@{top[1]}> erhält {rewards[2]}x <:Schoko_Ei:1221556659030196284>!", color=discord.Color.green())
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                await ctx.response.send_message(embed=embed)
+
+    #Notiz an mich: Beim debuggen darauf achten nicht springen zu gehen
+                
+
+
+
+            @discord.ui.button(label="Beitreten", style=discord.ButtonStyle.primary)
+            async def join(self, button: discord.ui.Button, interaction: discord.Interaction):
+                if interaction.user.id in self.value:
+                    return await interaction.response.send_message("Du bist bereits beigetreten!", ephemeral=True)
+                if not system.Get.group_fight_check(interaction.user.id):
+                    return await interaction.response.send_message("Du hast in den letzten 5 Minuten bereits an einem Gruppenkampf teilgenommen!", ephemeral=True)
+                if len(system.Get.type_eggs(interaction.user.id, "Schokoei")) < bet:
+                    return await interaction.response.send_message("Du hast nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
+                if system.Get.egg_check(interaction.user.id, "gekochtes Hühnerei") == False:
+                    return await interaction.response.send_message("Du hast kein <:osterei:962802014226640996>!", ephemeral=True)
+                self.value.append(interaction.user.id)
+                await interaction.response.send_message("Du bist dem Gruppenkampf beigetreten!", ephemeral=True)
+                system.Update.last_fight(interaction.user.id)
+
+        embed = discord.Embed(title="Gruppenkampf", description=f"{ctx.author.mention} hat einen Gruppenkampf gestartet! Möchtest du beitreten?", color=discord.Color.blurple())
+        embed.set_footer(text=f"Made by ItsKoga ❤")
+        view = View()
+        await ctx.response.send_message(embed=embed, view=view)
+
+
+
+
+
+
+
+
+
 
     @slash_command(name="bake", description="Backe ein gekochtes Hühnerei")
     async def bake(self, ctx):
