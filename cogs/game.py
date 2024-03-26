@@ -67,7 +67,7 @@ class Game(commands.Cog):
 
                 embed.set_footer(text=f"Made by ItsKoga ❤")
 
-                await interaction.response.send_message(interaction.user.mention,embed=embed)
+                await interaction.message.edit(embed=embed)
 
                 log(f"{ctx.author.name} hat {rewards.schokoei} Schokoeier, {rewards.gekochtesEi} gekochte Hühnereier, {rewards.ungekochtesEi} ungekochte Hühnereier, {rewards.egg_talisman} Eier Talisman und {rewards.rabbit_foot_count} Hasenpfoten gefunden!")        
                
@@ -300,10 +300,6 @@ Er erhält {rewards[0]}x <:Schoko_Ei:1221556659030196284>!\n\
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 await ctx.response.send_message(embed=embed)
 
-    #Notiz an mich: Beim debuggen darauf achten nicht springen zu gehen
-                
-
-
 
             @discord.ui.button(label="Beitreten", style=discord.ButtonStyle.primary)
             async def join(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -331,7 +327,7 @@ Er erhält {rewards[0]}x <:Schoko_Ei:1221556659030196284>!\n\
         check = system.Get.bake_check(ctx.author.id)
         if check == False:
             embed = discord.Embed(title="Kuchen backen", description="Du hast nicht alle Zutaten, daher kann dir deine Oma nicht helfen!", color=discord.Color.red())
-            embed.add_field(name="Zutaten", value="3x Ungekochtes Hühnerei\n10x Schokoei")
+            embed.add_field(name="Zutaten", value="3x :egg:\n10x <:Schoko_Ei:1221556659030196284>")
             embed.set_footer(text=f"Made by ItsKoga ❤")
             return await ctx.response.send_message(embed=embed)
         log(f"{ctx.author.name} hat ein kuchen gebacken!", "USER_ACTION")
