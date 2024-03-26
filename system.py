@@ -265,7 +265,7 @@ class Get:
         if users:
             return [User(user[0], user[1]) for user in users]
         else:
-            return None
+            return []
         
     def top_position(id):
         users = Get.top(1000)
@@ -284,7 +284,7 @@ class Get:
         
     def rabbit_foot_check(id):
         rabbit_foot = Database.execute_and_fetchone("SELECT rabbit_foot_count FROM users WHERE user_id = %s", (id,))
-        return True if rabbit_foot[0][0] > 0 else False
+        return True if rabbit_foot[0] > 0 else False
     
     
 class Add:
@@ -344,7 +344,7 @@ class Update:
 
 
 class Gen:
-    def nest(location, ctx):
+    def nest(location, ctx, rabbit_foot):
         class Nest:
             def __init__(self, location, type, schokoei=0, gekochtesEi=0, ungekochtesEi=0, egg_talisman=0, rabbit_foot_count=0, rabbit_foot=0):
                 self.location = location
@@ -357,7 +357,6 @@ class Gen:
                 self.rabbit_foot = rabbit_foot
 
         probabilities = Get.probabilities(ctx.author.id)
-        rabbit_foot = Get.rabbit_foot_check(ctx.author.id)
         type = random.choices(["empty", "normal", "special"], weights=[0.5, 0.4, 0.1])[0]
         if type == "empty":
             return Nest(location=location, type="empty")

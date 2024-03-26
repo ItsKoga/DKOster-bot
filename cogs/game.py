@@ -40,13 +40,17 @@ class Game(commands.Cog):
         embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=0xec6726)
         embed.set_image(url="https://i.imgur.com/AsSh0xY.png")
         embed.set_footer(text=f"Made by ItsKoga ❤")
+        log("/collect : Embed wurde erstellt!", "SYSTEM")
     
         locations = {}
+        rabbit_foot = system.Get.rabbit_foot_check(ctx.author.id)
         for location in ("1", "2", "3", "4", "5"):
-            locations[location] = system.Gen.nest(location, ctx)
+            locations[location] = system.Gen.nest(location, ctx, rabbit_foot)
+        log("/collect : Nester wurden generiert!", "SYSTEM")
                         
         view = discord.ui.View()
 
+        log("/collect : Ersttelle Buttons!")
         for location in locations:
             button = discord.ui.Button(label=location, style=discord.ButtonStyle.primary, custom_id=location)
             async def callback(interaction: discord.Interaction, location=locations[location]):
@@ -96,7 +100,10 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
             button.callback = callback
             view.add_item(button)
 
+        log("/collect : Buttons wurden erstellt!")
+
         await ctx.response.send_message(embed=embed, view=view)
+        log("/collect : Embed wurde gesendet!", "SYSTEM")
 
 
         
