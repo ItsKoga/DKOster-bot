@@ -281,6 +281,10 @@ class Get:
             return True
         else:
             return False
+        
+    def rabbit_foot_check(id):
+        rabbit_foot = Database.execute_and_fetchone("SELECT rabbit_foot_count FROM users WHERE user_id = %s", (id,))
+        return True if rabbit_foot[0][0] > 0 else False
     
     
 class Add:
@@ -352,19 +356,20 @@ class Gen:
                 self.rabbit_foot_count = rabbit_foot_count
 
         probabilities = Get.probabilities(ctx.author.id)
+        rabbit_foot = Get.rabbit_foot_check(ctx.author.id)
         type = random.choices(["empty", "normal", "special"], weights=[0.5, 0.4, 0.1])[0]
         if type == "empty":
             return Nest(location=location, type="empty")
         elif type == "normal":
             return Nest(location=location, type="normal",
                                                    schokoei=random.randint(1, 10),
-                                                   gekochtesEi=0 if random.random() < probabilities[0] else random.randint(1, 2),
-                                                   ungekochtesEi=0 if random.random() < probabilities[1] else random.randint(1, 2))
+                                                   gekochtesEi=0 if random.random() < probabilities[0] else random.randint(1, 2) * (2 if rabbit_foot else 1),
+                                                   ungekochtesEi=0 if random.random() < probabilities[1] else random.randint(1, 2) * (2 if rabbit_foot else 1))
         elif type == "special":
             return Nest(location=location, type="special",
                                                    schokoei=random.randint(1, 10),
-                                                   gekochtesEi=random.randint(1, 2) if random.random() <= 0.9 else 0,
-                                                   ungekochtesEi=random.randint(1, 2) if random.random() <= 0.1 else 0,
+                                                   gekochtesEi=random.randint(1, 2) * (2 if rabbit_foot else 1) if random.random() <= 0.9 else 0,
+                                                   ungekochtesEi=random.randint(1, 2) * (2 if rabbit_foot else 1) if random.random() <= 0.1 else 0,
                                                    egg_talisman=1 if Get.user(ctx.author.id).egg_talisman or random.random() <= 0.1 else 0,
                                                    rabbit_foot_count=1 if random.random() <= 0.25 else 0)
 

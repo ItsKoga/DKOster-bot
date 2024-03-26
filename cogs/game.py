@@ -37,7 +37,7 @@ class Game(commands.Cog):
     @commands.cooldown(1, 120, commands.BucketType.user)
     async def collect(self, ctx):
         log(f"{ctx.author.name} hat nach Eiern gesucht!", "USER_ACTION")
-        embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=discord.Color.blurple())
+        embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=0xec6726)
         embed.set_image(url="https://i.imgur.com/AsSh0xY.png")
         embed.set_footer(text=f"Made by ItsKoga ❤")
     
@@ -53,7 +53,7 @@ class Game(commands.Cog):
                 if interaction.user.id != ctx.author.id:
                     return await interaction.response.send_message("Du kannst nicht für andere Leute sammeln!", ephemeral=True)
                 await interaction.message.edit(view=None)
-                embed = discord.Embed(title="Eiersuche", description=f"**<:Eier_Nest:1221556705490636880> {location.location}** (Deine Suche):\n{system.Translate.nest(location)}",color=discord.Color.blurple())
+                embed = discord.Embed(title="Eiersuche", description=f"**<:Eier_Nest:1221556705490636880> {location.location}** (Deine Suche):\n{system.Translate.nest(location)}",color=0xec6726)
                 for location_ in locations:
                     if location_ != location.location:
                         embed.add_field(name="<:Eier_Nest:1221556705490636880> "+location_ + (f" ({locations[location_].type})" if locations[location_].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[location_]), inline=True)
@@ -76,6 +76,9 @@ class Game(commands.Cog):
                     system.Update.user_egg_talisman(ctx.author.id, 1)
                 if rewards.rabbit_foot_count:
                     system.Update.user_add_one_rabbit_foot_count(ctx.author.id)
+
+                if system.Get.rabbit_foot_check(ctx.author.id):
+                    system.Update.user_remove_one_rabbit_foot_count(ctx.author.id)
                 
                 log(f"{ctx.author.name} wurden die Belohnungen hinzugefügt!", "SUCCESS")
                 system.Get.points(ctx.author.id)
@@ -158,7 +161,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
             return await ctx.response.send_message("Dein Gegner hat kein <:osterei:962802014226640996>!", ephemeral=True)
         log(f"{ctx.author.name} hat {user.name} zum Kampf herausgefordert!", "USER_ACTION")
 
-        embed = discord.Embed(title="Kampf Anfrage", description=f"{ctx.author.mention} hat dich zu einem Kampf herausgefordert! Möchtest du annehmen?", color=discord.Color.blurple())
+        embed = discord.Embed(title="Kampf Anfrage", description=f"{ctx.author.mention} hat dich zu einem Kampf herausgefordert! Möchtest du annehmen?", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
         class View(discord.ui.View):
             def __init__(self):
@@ -173,7 +176,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
 
                 winner = random.choice([ctx.author.id, user.id])
                 looser = ctx.author.id if winner == user.id else user.id
-                embed = discord.Embed(title="Kampf", description=f"{ctx.author.mention} und {user.mention} kämpfen!", color=discord.Color.blurple())
+                embed = discord.Embed(title="Kampf", description=f"{ctx.author.mention} und {user.mention} kämpfen!", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 await interaction.response.send_message(embed=embed)
 
@@ -191,7 +194,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                         
                 await asyncio.sleep(5)
                 embed = discord.Embed(title="Kampf", description=f"<@{winner}> hat den Kampf gewonnen!\n\
-Er erhält {bet}x <:osterei:962802014226640996> von <@{looser}>.", color=discord.Color.green())
+Er erhält {bet}x <:osterei:962802014226640996> von <@{looser}>.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 await interaction.edit_original_response(embed=embed)
             
@@ -232,7 +235,7 @@ Er erhält {bet}x <:osterei:962802014226640996> von <@{looser}>.", color=discord
                 if len(self.value) < 4:
                     return await ctx.response.send_message("Nicht genug Spieler für den Gruppenkampf!", ephemeral=True)
                 
-                embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!", color=discord.Color.blurple())
+                embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 await ctx.response.send_message(embed=embed)
                 rewards = [int(bet*0.6), int(bet*0.25), int(bet*0.15)]
@@ -249,7 +252,7 @@ Er erhält {bet}x <:osterei:962802014226640996> von <@{looser}>.", color=discord
                     top.append(looser)
                     self.value.remove(looser)
                     system.Delete.egg(system.Get.egg_check(looser, "gekochtes Hühnerei").id)
-                    embed = discord.Embed(title="Gruppenkampf", description=f"<@{player1}> und <@{player2}> kämpfen!", color=discord.Color.blurple())
+                    embed = discord.Embed(title="Gruppenkampf", description=f"<@{player1}> und <@{player2}> kämpfen!", color=0xec6726)
                     embed.set_footer(text=f"Made by ItsKoga ❤")
                     if not msg:
                         msg = await self.original_response.respond(embed=embed)
@@ -258,14 +261,14 @@ Er erhält {bet}x <:osterei:962802014226640996> von <@{looser}>.", color=discord
                     await asyncio.sleep(3)
 
                     embed = discord.Embed(title="Gruppenkampf", description=f"<@{winner}> hat den Kampf gewonnen!\n\
-<@{looser}> ist auf Platz {len(self.value)+1} ausgeschieden!", color=discord.Color.green())
+<@{looser}> ist auf Platz {len(self.value)+1} ausgeschieden!", color=0xec6726)
 
                     await msg.edit(embed=embed)
                     self.value.remove(looser)
                     await asyncio.sleep(3)
 
                 embed = discord.Embed(title="Gruppenkampf", description=f"<@{self.value[0]}> hat den Gruppenkampf gewonnen!\n\
-Er erhält {rewards[0]}x <:Schoko_Ei:1221556659030196284>!", color=discord.Color.green())
+Er erhält {rewards[0]}x <:Schoko_Ei:1221556659030196284>!", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 await msg.edit(embed=embed)
 
@@ -307,17 +310,10 @@ Er erhält {rewards[0]}x <:Schoko_Ei:1221556659030196284>!\n\
                 await interaction.response.send_message("Du bist dem Gruppenkampf beigetreten!", ephemeral=True)
                 system.Update.last_fight(interaction.user.id)
 
-        embed = discord.Embed(title="Gruppenkampf", description=f"{ctx.author.mention} hat einen Gruppenkampf gestartet! Möchtest du beitreten?", color=discord.Color.blurple())
+        embed = discord.Embed(title="Gruppenkampf", description=f"{ctx.author.mention} hat einen Gruppenkampf gestartet! Möchtest du beitreten?", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
         view = View()
         await ctx.response.send_message(embed=embed, view=view)
-
-
-
-
-
-
-
 
 
 

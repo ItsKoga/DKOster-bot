@@ -51,7 +51,7 @@ class Stats(commands.Cog):
 <:osterei:962802014226640996> : {cooked}\n\
 Zuletzt getroffen : {last_hit}\n\
 Würfe : {len(throws)}/{len(own_hits)} `{round(100/len(throws)*len(own_hits) if throws else 0,1)}%`\n\
-Abgeworfen : {hits[0]}/{hits[1]} `{round(100/hits[0]*hits[1]if hits[0] else 0,1)}%`", color=discord.Color.blurple())
+Abgeworfen : {hits[0]}/{hits[1]} `{round(100/hits[0]*hits[1]if hits[0] else 0,1)}%`", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
         await ctx.response.send_message(embed=embed)
@@ -63,7 +63,7 @@ Abgeworfen : {hits[0]}/{hits[1]} `{round(100/hits[0]*hits[1]if hits[0] else 0,1)
     async def leaderboard(self, ctx):
         log(f"{ctx.author.name} hat die Leaderboard angefordert!", "USER_ACTION")
 
-        embed = discord.Embed(title="Leaderboard", description=system.Translate.leaderboard(10) + f"\n\n{system.Get.top_position(ctx.author.id)}. Du - {system.Get.points(ctx.author.id)}", color=discord.Color.blurple())
+        embed = discord.Embed(title="Leaderboard", description=system.Translate.leaderboard(10) + f"\n\n{system.Get.top_position(ctx.author.id)}. Du - {system.Get.points(ctx.author.id)}", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
         await ctx.response.send_message(embed=embed)
