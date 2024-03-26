@@ -340,6 +340,9 @@ class Update:
     
     def last_fight(id):
         Database.execute_and_commit("UPDATE users SET last_fight = %s WHERE user_id = %s", (tm.time(), id))
+
+    def user_add_collect(id):
+        Database.execute_and_commit("UPDATE users SET used_collect = used_collect + 1 WHERE user_id = %s", (id,))
             
 
 

@@ -37,6 +37,7 @@ class Game(commands.Cog):
     @commands.cooldown(1, 120, commands.BucketType.user)
     async def collect(self, ctx):
         log(f"{ctx.author.name} hat nach Eiern gesucht!", "USER_ACTION")
+        prfile = system.Get.user(ctx.author.id)
         embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=0xec6726)
         embed.set_image(url="https://i.imgur.com/AsSh0xY.png")
         embed.set_footer(text=f"Made by ItsKoga ❤")
@@ -86,6 +87,7 @@ class Game(commands.Cog):
                 
                 log(f"{ctx.author.name} wurden die Belohnungen hinzugefügt!", "SUCCESS")
                 system.Get.points(ctx.author.id)
+                system.Update.user_add_collect(ctx.author.id)
 
                 await asyncio.sleep(120)
                 embed = discord.Embed(title="Du kannst wieder /collect ausführen!", description="Es ist zwei Minuten her, seitdem du Pukte für das Oster-Event gesammelt hast.\n\
