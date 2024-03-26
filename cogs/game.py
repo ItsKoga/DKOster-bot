@@ -85,7 +85,7 @@ class Game(commands.Cog):
 
                 await asyncio.sleep(120)
                 embed = discord.Embed(title="Du kannst wieder /collect ausführen!", description="Es ist zwei Minuten her, seitdem du Pukte für das Oster-Event gesammelt hast.\n\
-Führe jetzt wieder /collect im Channel <#platzhalter> aus!\n\n\
+Führe jetzt wieder /collect im Channel <#1222195964144783493> aus!\n\n\
 Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping einfach mit dem /nofify Befehl.", color=discord.Color.random())
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 if system.Get.notifications(ctx.author.id):
