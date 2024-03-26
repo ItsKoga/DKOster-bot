@@ -346,7 +346,7 @@ class Update:
 class Gen:
     def nest(location, ctx):
         class Nest:
-            def __init__(self, location, type, schokoei=0, gekochtesEi=0, ungekochtesEi=0, egg_talisman=0, rabbit_foot_count=0):
+            def __init__(self, location, type, schokoei=0, gekochtesEi=0, ungekochtesEi=0, egg_talisman=0, rabbit_foot_count=0, rabbit_foot=0):
                 self.location = location
                 self.type = type
                 self.schokoei = schokoei
@@ -354,6 +354,7 @@ class Gen:
                 self.ungekochtesEi = ungekochtesEi
                 self.egg_talisman = egg_talisman
                 self.rabbit_foot_count = rabbit_foot_count
+                self.rabbit_foot = rabbit_foot
 
         probabilities = Get.probabilities(ctx.author.id)
         rabbit_foot = Get.rabbit_foot_check(ctx.author.id)
@@ -381,9 +382,15 @@ class Translate:
         else:
             nest_info = ""
             if nest.schokoei != 0:
-                nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284>\n"
+                if nest.rabbit_foot:
+                    nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284> (Hasenpfoten )\n"
+                else:
+                    nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284>\n"
             if nest.gekochtesEi != 0:
-                nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996>\n"
+                if nest.rabbit_foot:
+                    nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996> (Hasenpfoten )\n"
+                else:
+                    nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996>\n"
             if nest.ungekochtesEi != 0:
                 nest_info += f"{nest.ungekochtesEi}x :egg:\n"
             if nest.egg_talisman != 0:
