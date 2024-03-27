@@ -248,8 +248,8 @@ class Get:
             return []
         
     def notifications(id):
-        notifications = Database.execute_and_fetchall("SELECT notifications FROM users WHERE user_id = %s", (id,))
-        return True if notifications[0][0] == 1 else False
+        notifications = Database.execute_and_fetchone("SELECT notifications FROM users WHERE user_id = %s", (id,))
+        return True if notifications[0] == 1 else False
     
     def top(limit):
         class User:

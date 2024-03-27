@@ -66,9 +66,10 @@ class Game(commands.Cog):
                 self.timeout = 60
 
             async def on_timeout(self):
-                embed = discord.Embed(title="Eiersuche", description="Du hast zu lange gebraucht um ein Nest auszuwählen!", color=discord.Color.red())
-                embed.set_footer(text=f"Made by ItsKoga ❤")
-                await self.message.edit(embed=embed, view=None)
+                if self.value:
+                    embed = discord.Embed(title="Eiersuche", description="Du hast zu lange gebraucht um ein Nest auszuwählen!", color=discord.Color.red())
+                    embed.set_footer(text=f"Made by ItsKoga ❤")
+                    await self.message.edit(embed=embed, view=None)
 
             async def show_nest(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id != self.value:
@@ -108,6 +109,7 @@ class Game(commands.Cog):
                 log(f"{ctx.author.name} wurden die Belohnungen hinzugefügt!", "SUCCESS")
                 system.Get.points(self.value)
                 system.Update.user_add_collect(self.value)
+                self.value = False
 
                 await asyncio.sleep(120)
                 embed = discord.Embed(title="Du kannst wieder /collect ausführen!", description="Es ist zwei Minuten her, seitdem du Punkte für das Oster-Event gesammelt hast.\n\
@@ -152,7 +154,7 @@ class Game(commands.Cog):
             return await ctx.response.send_message("Du kannst nicht auf Bots werfen!", ephemeral=True)
         check = system.Get.egg_check(ctx.author.id, "ungekochtes Hühnerei")
         if check == False:
-            return await ctx.response.send_message("Du hast keine ungekochten Hühnereier!", ephemeral=True)
+            return await ctx.response.send_message("Du hast keine :egg:!", ephemeral=True)
         if system.Get.user(user.id).last_hit > tm.time()-300:
             return await ctx.response.send_message("Dieser User wurde in den letzen 5 Minuten bereits abgeworfen!", ephemeral=True)
         log(f"{ctx.author.name} hat ein Ei auf {user.name} geworfen!", "USER_ACTION")
@@ -160,7 +162,7 @@ class Game(commands.Cog):
         success = random.choice([0, 1])
         system.Add.throw(ctx.author.id, user.id, success)
         if success == 0:
-            embed = discord.Embed(title="Eierwurf", description=f"Du hast ein Ei auf {user.mention} geworfen, aber es ist daneben gegangen!", color=discord.Color.red())
+            embed = discord.Embed(title="Eierwurf", description=f"Du hast ein :egg: auf {user.mention} geworfen, aber es ist daneben gegangen!", color=discord.Color.red())
 
         else:
             points = system.Get.points(user.id)
@@ -168,20 +170,21 @@ class Game(commands.Cog):
             reward = int(points/100*percent)
 
             eggs = system.Get.type_eggs(ctx.user.id, "Schokoei")
+            embed = None
             for i in range(reward):
                 if eggs[i]:
                     system.Update.egg_owner(eggs[i].id, user.id)
                 else:
                     reward = i 
-                    embed = discord.Embed(title="Eierwurf", description=f"Du hast ein Ei auf {user.mention} geworfen und getroffen! Du hast {reward}`{percent}%` Schokoeier erhalten! Der rest war bei der Oma.", color=discord.Color.green())
+                    embed = discord.Embed(title="Eierwurf", description=f"Du hast ein :egg: auf {user.mention} geworfen und getroffen! Du hast {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten! Der rest war bei der Oma.", color=discord.Color.green())
                     break
             
             system.Update.user_last_hit(user.id)
-            system.Delete.egg(check.id)
 
             if not embed:
-                embed = discord.Embed(title="Eierwurf", description=f"Du hast ein Ei auf {user.mention} geworfen und getroffen! Du hast {reward}`{percent}%` Schokoeier erhalten!", color=discord.Color.green())
+                embed = discord.Embed(title="Eierwurf", description=f"Du hast ein :egg: auf {user.mention} geworfen und getroffen! Du hast {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten!", color=discord.Color.green())
                 
+        system.Delete.egg(check.id)
         embed.set_footer(text=f"Made by ItsKoga ❤")
         await ctx.response.send_message(user.mention,embed=embed)
         system.Get.points(ctx.author.id)
