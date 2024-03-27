@@ -83,7 +83,7 @@ class Info(commands.Cog):
 
             async def on_timeout(self):
                 self.disable_all_items()
-                await ctx.original_response.edit(view=self)
+                await self.message.edit(view=self)
 
         view = View()
         log("/info : View erstellt")
