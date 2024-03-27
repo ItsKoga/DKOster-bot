@@ -271,7 +271,7 @@ class Get:
     
     def group_fight_check(id):
         #get the last_fight from the database
-        last_fight = Database.execute_and_fetchone("SELECT last_fight FROM users WHERE user_id = %s", (id,))
+        last_fight = Database.execute_and_fetchall("SELECT last_fight FROM users WHERE user_id = %s", (id,))
         if last_fight[0][0] <= tm.time()-300:
             return True
         else:
@@ -288,6 +288,9 @@ class Get:
     
 class Add:
     def user(id):
+        #check if user already exists
+        if Database.execute_and_fetchone("SELECT * FROM users WHERE user_id = %s", (id,)):
+            return
         Database.execute_and_commit("INSERT INTO users (user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count) VALUES (%s, %s, %s, %s, %s)", (id, 0, 0, 0, 0))
         
     def egg(id, type):
@@ -388,7 +391,44 @@ class Gen:
                                                    ungekochtesEi=(random.randint(2, 4) * (2 if rabbit_foot else 1)) if random.random() <= 0.1 else 0,
                                                    egg_talisman=1 if Get.user(ctx.author.id).egg_talisman or random.random() <= 0.1 else 0,
                                                    rabbit_foot_count=1 if random.random() <= 0.25 else 0)
-
+        
+    def solo_fight_text(winner, loser, chocolate_egg_bet, participants):
+        strig = random.choice(["Die beiden Eier scheinen einiges auszuhalten.",
+                              "Beide sind hochkonzentriert am Eier aufeinanderschlagen.",
+                              "Keines der Eier scheint so richtig nachzugeben.",
+                              "Eieiei, was passiert denn da?",
+                              "Ein Ei gleicht dem anderen - noch kann sich keiner durchsetzen.",
+                              f"Ist das etwa ein Sprung im Ei von <@{random.choice(participants)}>? Noch hat keiner gewonnen...",
+                              "Kein Ei-nfaches Duell, es will sich keiner so richtig durchsetzen.",
+                              "Möge das beste Ei gewinnen!",
+                              "Spannung liegt in der Luft, während sich unsere beiden Kontrahenten duellieren.",
+                              "Ei-nfach spannend!",
+                              "Das ist ein Kopf-an-Kopf-Rennen! Oder doch Ei an Ei?",
+                              "Es ist ein Hin und Her zwischen den beiden. Wer wird am Ende triumphieren?",
+                              "Wer hat das härtere Ei? Noch wirken beide sehr solide."])
+        return strig
+    
+    def group_fight_text(participants):
+        string = random.choice(["Die Eier scheinen einiges auszuhalten",
+                                "Keines der Eier scheint so richtig nachzugeben.",
+                                "Eieiei, was passiert denn da?",
+                                "Ein Ei gleicht dem anderen - noch kann sich keiner durchsetzen.",
+                                f"Ist das etwa ein Sprung im Ei von <@{random.choice(participants)}>? Noch hat keiner gewonnen...",
+                                "Kein Ei-nfaches Duell, es will sich keiner so richtig durchsetzen."    
+                                "Möge das beste Ei gewinnen!",
+                                "Ei-nfach spannend!",
+                                "Das ist ein Kopf-an-Kopf-Rennen! Oder doch Ei an Ei?"])
+        
+        return string
+    
+    def group_fight_loose_text(looser):
+        string = random.choice([f"Das Ei von <@{looser}> gibt nach, das wars!",
+                                f"Knacks, das Ei ist kaputt, <@{looser}> ist raus!",
+                                f"Ziemlich hart, nich so fair - <@{looser}> ist ausgeschieden.",
+                                f"Plitsch, platsch, das Ei is matsch. Damit ist <@{looser}> raus.",
+                                f"Das waren wohl keine Eier aus Stahl. Sorry <@{looser}>, du bist drausen.",
+                                f"Eieiei, warum vorbei? Tut mir Leid <@{looser}>, aber dein Ei hat nachgegeben."])
+        return string
 
 class Translate:
     def nest(nest):
