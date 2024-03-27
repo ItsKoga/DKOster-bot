@@ -35,7 +35,7 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji="<:Schoko_Ei:1221556659030196284>", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji=":Schoko_Ei:1221556659030196284>", style=discord.ButtonStyle.primary)
             async def schoko(self, button: discord.ui.Button, interaction: discord.Interaction):
                 embed = discord.Embed(title="<:Schoko_Ei:1221556659030196284> Schokoladenei", 
                                       description="Schokoladeneier finden sich in Osternestern und lassen sich zu Kuchen verarbeiten, sodass diese nicht mehr gestohlen werden können. Ein Schokoladenei ist 1 Punkt wert.", color=0xec6726)
@@ -44,7 +44,7 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji=":egg:", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji="🥚", style=discord.ButtonStyle.primary)
             async def osterei(self, button: discord.ui.Button, interaction: discord.Interaction):
                 embed = discord.Embed(title=":egg: Rohes Ei", 
                                       description="Rohe Eier finden sich in Osternestern, mit ihnen können andere Spieler abgeworfen werden um Schokoeier von diesen zu klauen. Außerdem werden sie benötigt um einen Kuchen zu backen.", color=0xec6726)
@@ -62,7 +62,7 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji=":cake:", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji="🍰", style=discord.ButtonStyle.primary)
             async def kuchen(self, button: discord.ui.Button, interaction: discord.Interaction):
                 embed = discord.Embed(title=":cake: Kuchen", 
                                       description="Aus 10 Schokoladeneiern und 3 Rohen Eiern lässt sich von deiner Oma ein Kuchen backen, welcher 10 Punkte wert ist. Deine Oma beschützt diesen Kuchen, sodass er nicht geklaut werden kann.", color=0xec6726)
@@ -71,7 +71,7 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji=":star:", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji="⭐", style=discord.ButtonStyle.primary)
             async def special(self, button: discord.ui.Button, interaction: discord.Interaction):
                 embed = discord.Embed(title=":star: Special Items", 
                                       description="- **Eiertalisman:** Dieser erhöht die Chance auf gekochte oder ungekochte Eier, mit /talisman kann eingestellt werden welche Chance erhöht werden soll. Erhöht außerdem minimal die Anzahl der Eier pro Nest.\n\
@@ -87,6 +87,7 @@ class Info(commands.Cog):
 
         view = View()
         log("/info : View erstellt")
+        view.disable_item(0)
 
         embed = discord.Embed(title="<:info:1032012910702104687> Osterevent", 
                               description="Sammle während des Events so viele Punkte wie möglich, suche Osternester, wirf andere mit Eiern ab, kämpfe gegen sie im Eierditschen und lasse Kuchen von deiner Oma backen, um die Punkte zu sichern!", color=0xec6726)
