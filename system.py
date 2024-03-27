@@ -248,8 +248,9 @@ class Get:
             return []
         
     def notifications(id):
-        notifications = Database.execute_and_fetchone("SELECT notifications FROM users WHERE user_id = %s", (id,))
-        return True if notifications[0] == 1 else False
+        notifications = Database.execute_and_fetchall("SELECT notifications FROM users WHERE user_id = %s", (id,))
+        print(notifications)
+        return True if notifications[0][0] == 1 else False
     
     def top(limit):
         class User:
@@ -327,7 +328,7 @@ class Update:
         Database.execute_and_commit("UPDATE users SET rabbit_foot_count = rabbit_foot_count + 1 WHERE user_id = %s", (id,))
 
     def user_remove_one_rabbit_foot_count(id):
-        Database.execute_and_commit("UPDATE users SET rabbit_foot_count = rabbit_foot_count - 1, used_rabbit_foot_count = used_rabbit_foot_count - 1 WHERE user_id = %s", (id,))
+        Database.execute_and_commit("UPDATE users SET rabbit_foot_count = rabbit_foot_count - 1, used_rabbit_foot_count = used_rabbit_foot_count + 1 WHERE user_id = %s", (id,))
 
     def egg_owner(id, owner_id):
         Database.execute_and_commit("UPDATE eggs SET owner_id = %s WHERE egg_id = %s", (owner_id, id))

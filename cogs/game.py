@@ -66,7 +66,7 @@ class Game(commands.Cog):
                 self.timeout = 60
 
             async def on_timeout(self):
-                if self.value:
+                if not self.value[1]:
                     embed = discord.Embed(title="Eiersuche", description="Du hast zu lange gebraucht um ein Nest auszuwählen!", color=discord.Color.red())
                     embed.set_footer(text=f"Made by ItsKoga ❤")
                     await self.message.edit(embed=embed, view=None)
@@ -109,14 +109,14 @@ class Game(commands.Cog):
                 log(f"{ctx.author.name} wurden die Belohnungen hinzugefügt!", "SUCCESS")
                 system.Get.points(self.value)
                 system.Update.user_add_collect(self.value)
-                self.value = False
+                self.value = (self.value, True)
 
                 await asyncio.sleep(120)
                 embed = discord.Embed(title="Du kannst wieder /collect ausführen!", description="Es ist zwei Minuten her, seitdem du Punkte für das Oster-Event gesammelt hast.\n\
         Führe jetzt wieder /collect im Channel <#1222195964144783493> aus!\n\n\
         Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping einfach mit dem /notify Befehl.", color=discord.Color.random())
                 embed.set_footer(text=f"Made by ItsKoga ❤")
-                if system.Get.notifications(self.value):
+                if system.Get.notifications(self.value[0]):
                     await interaction.user.send(embed=embed)
 
             @discord.ui.button(label="1", style=discord.ButtonStyle.gray)

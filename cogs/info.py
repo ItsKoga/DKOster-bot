@@ -103,9 +103,9 @@ class Info(commands.Cog):
 - **/leaderboard:** Zeigt die Top 10 der User an\n\
 - **/fight:** Startet Eierditschen gegen einen User\n\
 - **/groupfight:** Startet ein Gruppeneierditschen (Alle 5 Minuten möglich)\n\
-- **/throw:** Wirf ein Ei ein :egg: auf einen anderen User, um diesem <schokoei:1221556659030196284> zu klauen\n\
+- **/throw:** Wirf ein Ei ein :egg: auf einen anderen User, um diesem <:Schoko_Ei:1221556659030196284> zu klauen\n\
 - **/bake;** Lässt deine Oma einen Kuchen backen\n\
-- **/talisman:** Wähle aus ob du mehr <osterei:962802014226640996> oder :egg: finden möchtest\n\
+- **/talisman:** Wähle aus ob du mehr <:osterei:962802014226640996> oder :egg: finden möchtest\n\
 - **/notify:** Ändert die Benachrichtigungseinstellungen", color=0xec6726)  
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
