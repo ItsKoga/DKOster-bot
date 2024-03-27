@@ -165,13 +165,8 @@ class Get:
     
     def bake_check(id):
         eggs = Get.eggs(id)
-        chocolate_eggs = 0
-        uncooked_eggs = 0
-        for egg in eggs:
-            if egg.type == "Schokoei":
-                chocolate_eggs += 1
-            elif egg.type == "ungekochtes Hühnerei":
-                uncooked_eggs += 1
+        chocolate_eggs = len(Get.type_eggs(id, "Schokoei"))
+        uncooked_eggs = len([egg for egg in eggs if egg.type == "ungekochtes Hühnerei" and egg.is_rotten == False])
         if chocolate_eggs >= 10 and uncooked_eggs >= 3:
             return True
         else:
@@ -237,9 +232,9 @@ class Get:
     def own_throws(id):
         throws = Get.throws(id)
         if throws:
-            return [throw for throw in throws if throw.thrower_id == id]
+            return [throw for throw in throws if throw.thrower_id == str(id)]
         else:
-            return None
+            return []
         
     def cakes(id):
         class Cake:
@@ -286,6 +281,10 @@ class Get:
         rabbit_foot = Database.execute_and_fetchone("SELECT rabbit_foot_count FROM users WHERE user_id = %s", (id,))
         return True if rabbit_foot[0] > 0 else False
     
+    def user_collect_amount(id):
+        collect = Database.execute_and_fetchone("SELECT used_collect FROM users WHERE user_id = %s", (id,))
+        return collect[0]
+
     
 class Add:
     def user(id):
@@ -305,13 +304,17 @@ class Add:
         
     def cake(user_id):
         Database.execute_and_commit("INSERT INTO cakes (user_id) VALUES (%s)", (user_id,))
-        #remove 10 chocolate eggs and 3 uncooked eggs
         eggs = Get.type_eggs(user_id, "Schokoei")
         for i in range(10):
             Delete.egg(eggs[i].id)
         eggs = Get.type_eggs(user_id, "ungekochtes Hühnerei")
-        for i in range(3):
-            Delete.egg(eggs[i].id)
+        i = 0
+        for egg in eggs:
+            if egg.is_rotten == False:
+                Delete.egg(egg.id)
+                i += 1
+            if i == 3:
+                break
 
 class Update:
     def user_last_hit(id):
@@ -370,9 +373,9 @@ class Gen:
                                                    ungekochtesEi=0 if random.random() < probabilities[1] else random.randint(1, 2) * (2 if rabbit_foot else 1))
         elif type == "special":
             return Nest(location=location, type="special",
-                                                   schokoei=random.randint(1, 10),
-                                                   gekochtesEi=random.randint(1, 2) * (2 if rabbit_foot else 1) if random.random() <= 0.9 else 0,
-                                                   ungekochtesEi=random.randint(1, 2) * (2 if rabbit_foot else 1) if random.random() <= 0.1 else 0,
+                                                   schokoei=random.randint(5, 15),
+                                                   gekochtesEi=random.randint(2, 4) * (2 if rabbit_foot else 1) if random.random() <= 0.9 else 0,
+                                                   ungekochtesEi=random.randint(2, 4) * (2 if rabbit_foot else 1) if random.random() <= 0.1 else 0,
                                                    egg_talisman=1 if Get.user(ctx.author.id).egg_talisman or random.random() <= 0.1 else 0,
                                                    rabbit_foot_count=1 if random.random() <= 0.25 else 0)
 
