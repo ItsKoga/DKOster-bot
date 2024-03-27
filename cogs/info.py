@@ -42,7 +42,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title="<:Schoko_Ei:1221556659030196284> Schokoladenei", 
-                                      description="Schokoladeneier finden sich in Osternestern und lassen sich zu Kuchen verarbeiten, sodass diese nicht mehr gestohlen werden können. Ein Schokoladenei ist 1 Punkt wert. Es ist wichtig zu beachten, dass sie nach einem Tag verfaulen.", color=0xec6726)
+                                      description="Schokoladeneier finden sich in Osternestern und lassen sich zu Kuchen verarbeiten, sodass diese nicht mehr gestohlen werden können. Ein Schokoladenei ist 1 Punkt wert.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
@@ -64,7 +64,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title="<:osterei:962802014226640996> Gekochtes Ei", 
-                                      description="Mit diesen Eiern lässt sich mit /fight Eierditschen spielen, sowieo mit /groupfight ein Gruppenkampf starten. Gespielt wird um Schokoeier, es kann eine beliebige Anzahl gesetzt werden. Bei einem normalen Eierditschen erhält der Gewinner alle Schokoeier, bei einem Gruppenkampf der erste Platz 60% des Gesamteinsatzes, Platz 2 25% und Platz 3 15%", color=0xec6726)
+                                      description="Mit diesen Eiern lässt sich mit /fight Eierditschen spielen, sowie mit /groupfight ein Gruppenkampf starten. Gespielt wird um Schokoeier, es kann eine beliebige Anzahl gesetzt werden. Bei einem normalen Eierditschen erhält der Gewinner alle Schokoeier, bei einem Gruppenkampf der erste Platz 60% des Gesamteinsatzes, Platz 2 25% und Platz 3 15%. Wichtig zu beachten ist, dass die Eier nach einem Tag verfaulen.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True

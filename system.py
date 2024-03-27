@@ -249,7 +249,6 @@ class Get:
         
     def notifications(id):
         notifications = Database.execute_and_fetchall("SELECT notifications FROM users WHERE user_id = %s", (id,))
-        print(notifications)
         return True if notifications[0][0] == 1 else False
     
     def top(limit):
