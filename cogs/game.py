@@ -53,7 +53,7 @@ class Game(commands.Cog):
             for nest in locations:
                 if locations[nest].type == "empty":
                     empty += 1
-            if empty < 3:
+            if empty <= 2:
                 break
             
         log("/collect : Nester wurden generiert!", "SYSTEM")
