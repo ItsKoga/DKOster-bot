@@ -26,7 +26,7 @@ class Info(commands.Cog):
                 self.value = ctx.author.id
                 self.timeout = 60
 
-            @discord.ui.button(emoji="<:info:1032012910702104687>", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji="<:info:1032012910702104687>", style=discord.ButtonStyle.gray)
             async def info(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
@@ -37,7 +37,7 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji=":Schoko_Ei:1221556659030196284>", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji=":Schoko_Ei:1221556659030196284>", style=discord.ButtonStyle.gray)
             async def schoko(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
@@ -48,7 +48,7 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji="🥚", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji="🥚", style=discord.ButtonStyle.gray)
             async def osterei(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
@@ -59,7 +59,7 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji="<:osterei:962802014226640996>", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji="<:osterei:962802014226640996>", style=discord.ButtonStyle.gray)
             async def gekocht(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
@@ -70,7 +70,7 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji="🍰", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji="🍰", style=discord.ButtonStyle.gray)
             async def kuchen(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
@@ -81,7 +81,7 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji="⭐", style=discord.ButtonStyle.primary)
+            @discord.ui.button(emoji="⭐", style=discord.ButtonStyle.gray)
             async def special(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)

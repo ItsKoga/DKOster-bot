@@ -57,64 +57,85 @@ class Game(commands.Cog):
                 break
             
         log("/collect : Nester wurden generiert!", "SYSTEM")
-                        
-        view = discord.ui.View()
 
-        log("/collect : Ersttelle Buttons!")
-        for location in locations:
-            button = discord.ui.Button(label=location, style=discord.ButtonStyle.primary, custom_id=location)
-            async def callback(interaction: discord.Interaction, location=locations[location]):
-                if interaction.user.id != ctx.author.id:
-                    return await interaction.response.send_message("Du kannst nicht für andere Leute sammeln!", ephemeral=True)
+
+        class View(discord.ui.View):
+            def __init__(self):
+                super().__init__()
+                self.value = ctx.author.id
+                self.timeout = 60
+
+            async def on_timeout(self):
+                embed = discord.Embed(title="Eiersuche", description="Du hast zu lange gebraucht um ein Nest auszuwählen!", color=discord.Color.red())
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                await self.message.edit(embed=embed, view=None)
+
+            async def show_nest(self, button: discord.ui.Button, interaction: discord.Interaction):
+                if interaction.user.id != self.value:
+                    return await interaction.response.send_message("Du kannst nicht für jemand anderen ein Nest auswählen!", ephemeral=True)
                 await interaction.message.edit(view=None)
-                embed = discord.Embed(title="Eiersuche", description=f"**{location.location}.<:Eier_Nest:1221556705490636880>** (Deine Suche):\n{system.Translate.nest(location)}",color=0xec6726)
-                for location_ in locations:
-                    if location_ != location.location:
-                        embed.add_field(name=location_+".<:Eier_Nest:1221556705490636880> "+(f" ({locations[location_].type})" if locations[location_].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[location_]), inline=True)
+                embed = discord.Embed(title="Eiersuche", description=f"**1.<:Eier_Nest:1221556705490636880>** (Deine Suche):\n{system.Translate.nest(locations['1'])}", color=0xec6726)
+                for location in locations:
+                    if location != "1":
+                        embed.add_field(name=f"{location}.<:Eier_Nest:1221556705490636880> "+(f" ({locations[location].type})" if locations[location].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[location]), inline=True)
                     else:
-                        rewards = locations[location_]
+                        rewards = locations[location]
 
                 embed.set_footer(text=f"Made by ItsKoga ❤")
 
                 await interaction.message.edit(embed=embed)
 
-                log(f"{ctx.author.name} hat {rewards.schokoei} Schokoeier, {rewards.gekochtesEi} gekochte Hühnereier, {rewards.ungekochtesEi} ungekochte Hühnereier, {rewards.egg_talisman} Eier Talisman und {rewards.rabbit_foot_count} Hasenpfoten gefunden!")        
-               
-                for i in range(rewards.schokoei):
-                    system.Add.egg(ctx.author.id, "Schokoei")
-                for i in range(rewards.gekochtesEi):
-                    system.Add.egg(ctx.author.id, "gekochtes Hühnerei")
-                for i in range(rewards.ungekochtesEi):
-                    system.Add.egg(ctx.author.id, "ungekochtes Hühnerei")
-                if rewards.egg_talisman:
-                    system.Update.user_egg_talisman(ctx.author.id, 1)
-                if rewards.rabbit_foot_count:
-                    system.Update.user_add_one_rabbit_foot_count(ctx.author.id)
+                log(f"{ctx.author.name} hat {rewards.schokoei} Schokoeier, {rewards.gekochtesEi} gekochte Hühnereier, {rewards.ungekochtesEi} ungekochte Hühnereier, {rewards.egg_talisman} Eier Talisman und {rewards.rabbit_foot_count} Hasenpfoten gefunden!")
 
-                if system.Get.rabbit_foot_check(ctx.author.id):
-                    system.Update.user_remove_one_rabbit_foot_count(ctx.author.id)
-                
+                for i in range(rewards.schokoei):
+                    system.Add.egg(self.value, "Schokoei")
+                for i in range(rewards.gekochtesEi):
+                    system.Add.egg(self.value, "gekochtes Hühnerei")
+                for i in range(rewards.ungekochtesEi):
+                    system.Add.egg(self.value, "ungekochtes Hühnerei")
+                if rewards.egg_talisman:
+                    system.Update.user_egg_talisman(self.value, 1)
+                if rewards.rabbit_foot_count:
+                    system.Update.user_add_one_rabbit_foot_count(self.value)
+
+                if system.Get.rabbit_foot_check(self.value):
+                    system.Update.user_remove_one_rabbit_foot_count(self.value)
+
                 log(f"{ctx.author.name} wurden die Belohnungen hinzugefügt!", "SUCCESS")
-                system.Get.points(ctx.author.id)
-                system.Update.user_add_collect(ctx.author.id)
+                system.Get.points(self.value)
+                system.Update.user_add_collect(self.value)
 
                 await asyncio.sleep(120)
                 embed = discord.Embed(title="Du kannst wieder /collect ausführen!", description="Es ist zwei Minuten her, seitdem du Punkte für das Oster-Event gesammelt hast.\n\
-Führe jetzt wieder /collect im Channel <#1222195964144783493> aus!\n\n\
-Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping einfach mit dem /notify Befehl.", color=discord.Color.random())
+        Führe jetzt wieder /collect im Channel <#1222195964144783493> aus!\n\n\
+        Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping einfach mit dem /notify Befehl.", color=discord.Color.random())
                 embed.set_footer(text=f"Made by ItsKoga ❤")
-                if system.Get.notifications(ctx.author.id):
+                if system.Get.notifications(self.value):
                     await interaction.user.send(embed=embed)
 
-                
+            @discord.ui.button(label="1", style=discord.ButtonStyle.gray)
+            async def one(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await self.show_nest(button, interaction)
 
-            button.callback = callback
-            view.add_item(button)
+            @discord.ui.button(label="2", style=discord.ButtonStyle.gray)
+            async def two(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await self.show_nest(button, interaction)
 
-        log("/collect : Buttons wurden erstellt!")
+            @discord.ui.button(label="3", style=discord.ButtonStyle.gray)
+            async def three(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await self.show_nest(button, interaction)
+
+            @discord.ui.button(label="4", style=discord.ButtonStyle.gray)
+            async def four(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await self.show_nest(button, interaction)
+
+            @discord.ui.button(label="5", style=discord.ButtonStyle.gray)
+            async def five(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await self.show_nest(button, interaction)
+
+        view = View()
 
         await ctx.response.send_message(embed=embed, view=view)
-        log("/collect : Embed wurde gesendet!", "SYSTEM")
 
 
         
