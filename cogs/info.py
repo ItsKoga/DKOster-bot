@@ -42,7 +42,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title="<:Schoko_Ei:1221556659030196284> Schokoladenei", 
-                                      description="Schokoladeneier finden sich in Osternestern und lassen sich zu Kuchen verarbeiten, sodass diese nicht mehr gestohlen werden können. Ein Schokoladenei ist 1 Punkt wert.", color=0xec6726)
+                                      description="Schokoladeneier finden sich in Osternestern und lassen sich zu Kuchen verarbeiten, sodass diese nicht mehr gestohlen werden können. Ein Schokoladenei ist 1 Punkt wert. Es ist wichtig zu beachten, dass sie nach einem Tag verfaulen.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
@@ -53,7 +53,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title=":egg: Rohes Ei", 
-                                      description="Rohe Eier finden sich in Osternestern, mit ihnen können andere Spieler abgeworfen werden um Schokoeier von diesen zu klauen. Außerdem werden sie benötigt um einen Kuchen zu backen.", color=0xec6726)
+                                      description="Rohe Eier finden sich in Osternestern, mit ihnen können andere Spieler abgeworfen werden, um Schokoeier von diesen zu klauen. Außerdem werden sie benötigt, um einen Kuchen zu backen. Es ist jedoch zu beachten, dass sie nach 3 Stunden verfaulen.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True

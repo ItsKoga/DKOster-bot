@@ -118,8 +118,8 @@ class Get:
                 self.owner_id = owner_id
                 self.creator_id = creator_id
                 self.type = type
-                self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-28800 and type == "gekochtes Hühnerei")) else False
-        eggs = Database.execute_and_fetchall("SELECT * FROM eggs WHERE owner_id = %s", (id,))
+                self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-86400 and type == "gekochtes Hühnerei")) else False
+        eggs = Database.execute_and_fetchall("SELECT * FROM eggs WHERE owner_id = %s", (id,)) 
         time = tm.time()
         if eggs:
             return [Egg(egg[0], egg[1], egg[2], egg[3], egg[4], time) for egg in eggs]
@@ -133,7 +133,7 @@ class Get:
                 self.owner_id = owner_id
                 self.creator_id = creator_id
                 self.type = type
-                self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-28800 and type == "gekochtes Hühnerei")) else False
+                self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-86400 and type == "gekochtes Hühnerei")) else False
         eggs = Database.execute_and_fetchall("SELECT * FROM eggs WHERE owner_id = %s AND type = %s", (id, type))
         time = tm.time()
         if eggs:
@@ -148,7 +148,7 @@ class Get:
                 self.owner_id = owner_id
                 self.creator_id = creator_id
                 self.type = type
-                self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-28800 and type == "gekochtes Hühnerei")) else False
+                self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-86400 and type == "gekochtes Hühnerei")) else False
         egg = Database.execute_and_fetchone("SELECT * FROM eggs WHERE owner_id = %s", (id,))
         time = tm.time()
         if egg:
