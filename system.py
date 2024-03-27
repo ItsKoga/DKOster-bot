@@ -370,7 +370,7 @@ class Gen:
                 self.ungekochtesEi = ungekochtesEi
                 self.egg_talisman = egg_talisman
                 self.rabbit_foot_count = rabbit_foot_count
-                self.rabbit_foot = rabbit_foot
+                self.rabbit_foot = True if rabbit_foot != 0 else False
 
         probabilities = Get.probabilities(ctx.author.id)
         type = random.choices(["empty", "normal", "special"], weights=[0.25, 0.7, 0.15])[0]
@@ -379,13 +379,13 @@ class Gen:
         elif type == "normal":
             return Nest(location=location, type="normal",
                                                    schokoei=random.randint(1, 10),
-                                                   gekochtesEi=0 if random.random() < probabilities[0] else random.randint(1, 2) * (2 if rabbit_foot else 1),
-                                                   ungekochtesEi=0 if random.random() < probabilities[1] else random.randint(1, 2) * (2 if rabbit_foot else 1))
+                                                   gekochtesEi=0 if random.random() < probabilities[0] else (random.randint(1, 2) * (2 if rabbit_foot else 1)),
+                                                   ungekochtesEi=0 if random.random() < probabilities[1] else (random.randint(1, 2) * (2 if rabbit_foot else 1)))
         elif type == "special":
             return Nest(location=location, type="special",
                                                    schokoei=random.randint(5, 15),
-                                                   gekochtesEi=random.randint(2, 4) * (2 if rabbit_foot else 1) if random.random() <= 0.9 else 0,
-                                                   ungekochtesEi=random.randint(2, 4) * (2 if rabbit_foot else 1) if random.random() <= 0.1 else 0,
+                                                   gekochtesEi=(random.randint(2, 4) * (2 if rabbit_foot else 1)) if random.random() <= 0.9 else 0,
+                                                   ungekochtesEi=(random.randint(2, 4) * (2 if rabbit_foot else 1)) if random.random() <= 0.1 else 0,
                                                    egg_talisman=1 if Get.user(ctx.author.id).egg_talisman or random.random() <= 0.1 else 0,
                                                    rabbit_foot_count=1 if random.random() <= 0.25 else 0)
 
@@ -398,12 +398,12 @@ class Translate:
             nest_info = ""
             if nest.schokoei != 0:
                 if nest.rabbit_foot:
-                    nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284> (Hasenpfoten )\n"
+                    nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284> (Hasenpfoten Boost)\n"
                 else:
                     nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284>\n"
             if nest.gekochtesEi != 0:
                 if nest.rabbit_foot:
-                    nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996> (Hasenpfoten )\n"
+                    nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996> (Hasenpfoten Boost)\n"
                 else:
                     nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996>\n"
             if nest.ungekochtesEi != 0:
