@@ -74,12 +74,13 @@ class Game(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Du kannst nicht für jemand anderen ein Nest auswählen!", ephemeral=True)
                 await interaction.message.edit(view=None)
-                embed = discord.Embed(title="Eiersuche", description=f"**1.<:Eier_Nest:1221556705490636880>** (Deine Suche):\n{system.Translate.nest(locations['1'])}", color=0xec6726)
+                embed = discord.Embed(title="Eiersuche", description=f"**{button.label}.<:Eier_Nest:1221556705490636880>** (Deine Suche):\n{system.Translate.nest(locations['1'])}", color=0xec6726)
                 for location in locations:
-                    if location != "1":
+                    if location != button.label:
                         embed.add_field(name=f"{location}.<:Eier_Nest:1221556705490636880> "+(f" ({locations[location].type})" if locations[location].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[location]), inline=True)
                     else:
                         rewards = locations[location]
+                        system.Update.stats_location(location)
 
                 embed.set_footer(text=f"Made by ItsKoga ❤")
 
@@ -100,6 +101,9 @@ class Game(commands.Cog):
 
                 if system.Get.rabbit_foot_check(self.value):
                     system.Update.user_remove_one_rabbit_foot_count(self.value)
+                
+                if rewards.schokoei or rewards.gekochtesEi or rewards.ungekochtesEi:
+                    system.Update.stats_add_nests_found()
 
                 log(f"{ctx.author.name} wurden die Belohnungen hinzugefügt!", "SUCCESS")
                 system.Get.points(self.value)

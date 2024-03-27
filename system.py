@@ -346,6 +346,16 @@ class Update:
 
     def user_add_collect(id):
         Database.execute_and_commit("UPDATE users SET used_collect = used_collect + 1 WHERE user_id = %s", (id,))
+
+    def stats_location(location):
+        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = %s", (location,))
+        Update.stats_add_nests_searched()
+
+    def stats_add_nests_found():
+        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = 'nests_found'")
+
+    def stats_add_nests_searched():
+        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = 'nests_searched'")
             
 
 
