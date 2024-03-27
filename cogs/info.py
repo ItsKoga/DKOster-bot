@@ -87,7 +87,7 @@ class Info(commands.Cog):
 
         view = View()
         log("/info : View erstellt")
-        view.disable_item(0)
+        view.children[0].disabled = True
 
         embed = discord.Embed(title="<:info:1032012910702104687> Osterevent", 
                               description="Sammle während des Events so viele Punkte wie möglich, suche Osternester, wirf andere mit Eiern ab, kämpfe gegen sie im Eierditschen und lasse Kuchen von deiner Oma backen, um die Punkte zu sichern!", color=0xec6726)
