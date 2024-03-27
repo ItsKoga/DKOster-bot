@@ -20,7 +20,7 @@ class Settings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @slash_command(name="notify", description="Schaltet die Benachrichtigungen an oder aus")
+    @slash_command(name="notify", description="Schaltet die Benachrichtigungen an oder aus", guild_only=False)
     async def notify(self, ctx):
         log(f"{ctx.author.name} hat die Benachrichtigungen umgestellt!", "USER_ACTION")
 
