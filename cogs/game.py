@@ -198,6 +198,8 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
             return await ctx.response.send_message("Du kannst nicht gegen Bots kämpfen!", ephemeral=True)
         if bet < 1:
             return await ctx.response.send_message("Du musst mindestens 1 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
+        if bet > 25:
+            return await ctx.response.send_message("Du kannst maximal 25 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
         if len(system.Get.type_eggs(ctx.author.id, "Schokoei")) < bet:
             return await ctx.response.send_message("Du hast nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
         if len(system.Get.type_eggs(user.id, "Schokoei")) < bet:
@@ -213,16 +215,18 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         class View(discord.ui.View):
             def __init__(self):
                 super().__init__()
-                self.value = None
+                self.value = user.id
 
             async def on_timeout(self):
-                self.value = False
-                self.disable_all_items()
-                await self.message.edit(view=self)
-                await ctx.response.send_message("Kampf Anfrage wurde nicht angenommen!", ephemeral=True)
+                if self.value != True:
+                    self.disable_all_items()
+                    await self.message.edit(view=self)
+                    await ctx.response.send_message("Kampf Anfrage wurde nicht angenommen!", ephemeral=True)
 
             @discord.ui.button(label="Annehmen", style=discord.ButtonStyle.success)
             async def accept(self, button: discord.ui.Button, interaction: discord.Interaction):
+                if interaction.user.id != self.value:
+                    return await interaction.response.send_message("Du kannst nicht für jemand anderen antworten!", ephemeral=True)
                 self.value = True
                 self.disable_all_items()
                 await interaction.message.edit(view=self)
@@ -248,17 +252,20 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                 await asyncio.sleep(4)
                 embed = discord.Embed(title="Kampf", description=system.Gen.solo_fight_text(winner, looser, bet, [ctx.author.id, user.id]), color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
-                await interaction.edit_original_response(embed=embed)
+                msg = await interaction.original_response()
+                msg = await msg.reply(embed=embed)
                         
                 await asyncio.sleep(4)
                 embed = discord.Embed(title="Kampf", description=f"<@{winner}> hat den Kampf gewonnen!\n\
 Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
-                await interaction.edit_original_response(embed=embed)
+                await msg.reply(embed=embed)
             
             
             @discord.ui.button(label="Ablehnen", style=discord.ButtonStyle.danger)
             async def decline(self, button: discord.ui.Button, interaction: discord.Interaction):
+                if interaction.user.id != self.value:
+                    return await interaction.response.send_message("Du kannst nicht für jemand anderen antworten!", ephemeral=True)
                 self.value = False
                 self.disable_all_items()
                 await interaction.message.edit(view=self)
@@ -274,6 +281,8 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
     async def group_fight(self, ctx, bet: int):
         if bet < 1:
             return await ctx.response.send_message("Du musst mindestens 1 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
+        if bet > 25:
+            return await ctx.response.send_message("Du kannst maximal 25 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
         if len(system.Get.type_eggs(ctx.author.id, "Schokoei")) < bet:
             return await ctx.response.send_message("Du hast nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
         if system.Get.egg_check(ctx.author.id, "gekochtes Hühnerei") == False:
@@ -291,6 +300,9 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                 await self.message.edit(view=None)
                 if len(self.value) < 4:
                     self.message.reply("Nicht genug Spieler für den Gruppenkampf!")
+
+                if bet*len(self.value) > 500:
+                    return await self.message.reply("Die maximale <:Schoko_Ei:1221556659030196284> für den Gruppenkampf beträgt 500 <:Schoko_Ei:1221556659030196284>!")
                 
                 string = "\n".join([f"- <@{user}>" for user in self.value])
                 embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!\n**Teilnehmer:** \n{string}", color=0xec6726)
