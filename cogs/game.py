@@ -187,6 +187,12 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                 super().__init__()
                 self.value = None
 
+            async def on_timeout(self):
+                self.value = False
+                self.disable_all_items()
+                await self.message.edit(view=self)
+                await ctx.response.send_message("Kampf Anfrage wurde nicht angenommen!", ephemeral=True)
+
             @discord.ui.button(label="Annehmen", style=discord.ButtonStyle.success)
             async def accept(self, button: discord.ui.Button, interaction: discord.Interaction):
                 self.value = True
