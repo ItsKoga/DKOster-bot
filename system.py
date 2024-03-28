@@ -279,13 +279,18 @@ class Get:
         
     def rabbit_foot_check(id):
         rabbit_foot = Database.execute_and_fetchone("SELECT rabbit_foot_count FROM users WHERE user_id = %s", (id,))
-        return True if rabbit_foot[0] > 0 else False
+        return rabbit_foot[0]
     
     def user_collect_amount(id):
         collect = Database.execute_and_fetchone("SELECT used_collect FROM users WHERE user_id = %s", (id,))
         return collect[0]
 
     
+    def talisman_check(id):
+        talisman = Database.execute_and_fetchone("SELECT egg_talisman FROM users WHERE user_id = %s", (id,))
+        return True if talisman[0] > 0 else False
+
+
 class Add:
     def user(id):
         #check if user already exists
@@ -376,7 +381,7 @@ class Gen:
                 self.rabbit_foot = True if rabbit_foot != 0 else False
 
         probabilities = Get.probabilities(ctx.author.id)
-        type = random.choices(["empty", "normal", "special"], weights=[0.25, 0.7, 0.15])[0]
+        type = random.choices(["empty", "normal", "special"], weights=[0.25, 0.7, 0.05])[0]
         if type == "empty":
             return Nest(location=location, type="empty")
         elif type == "normal":
@@ -389,7 +394,7 @@ class Gen:
                                                    schokoei=random.randint(5, 15),
                                                    gekochtesEi=(random.randint(2, 4) * (2 if rabbit_foot else 1)) if random.random() <= 0.9 else 0,
                                                    ungekochtesEi=(random.randint(2, 4) * (2 if rabbit_foot else 1)) if random.random() <= 0.1 else 0,
-                                                   egg_talisman=1 if Get.user(ctx.author.id).egg_talisman or random.random() <= 0.1 else 0,
+                                                   egg_talisman=1 if Get.talisman_check(ctx.author.id) or random.random() <= 0.03 else 0,
                                                    rabbit_foot_count=1 if random.random() <= 0.25 else 0)
         
     def solo_fight_text(winner, loser, chocolate_egg_bet, participants):
