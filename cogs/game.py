@@ -331,7 +331,7 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
         class View(discord.ui.View):
             def __init__(self):
                 super().__init__()
-                self.value = [ctx.author.id, 665877065194536960, 303107139654647810, 566252917720481793]
+                self.value = [ctx.author.id]
                 self.timeout = 60
 
             async def on_timeout(self):
