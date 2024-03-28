@@ -8,12 +8,33 @@ import asyncio
 
 import log_helper
 import system
+
 import random
+import requests
 
 import time as tm
 import discord
 
 log = log_helper.create("Game")
+
+
+
+def is_verified():
+    def verified(ctx):
+        url = f"https://combi.dev/API/CheckVerification?ID={ctx.author.id}&key=69b205c5-bde2-43ee-8d04-48fd11108c26"
+        response = requests.get(url).json()
+        if response["verified"]:
+            return True
+        return False
+    return commands.check(verified)
+
+def is_day():
+    def day(ctx):
+        time = tm.localtime()
+        if time.tm_hour < 6 or time.tm_hour >= 22:
+            return False
+        return True
+    return commands.check(day)
 
 
 class Game(commands.Cog):
@@ -22,18 +43,32 @@ class Game(commands.Cog):
 
     @commands.Cog.listener()
     async def on_application_command_error(self, ctx, error):
+        print(error)
         if isinstance(error, commands.CommandOnCooldown):
-        
-            if 0 <= tm.localtime().tm_hour < 6 and ctx.command.name != "leaderboard":
-                await ctx.response.send_message("Momentan versteckt der Osterhase neue Eier! Du kannst dich also bis 6:00 Uhr schlafen legen.", ephemeral=True)
-
             if ctx.command.name == "collect":
-                await ctx.response.send_message(f"Du kannst erst <t:{int(tm.time()+error.retry_after)}:R> wieder nach Eiern suchen!", ephemeral=True)
+                embed = discord.Embed(title="Eiersuche", description=f"Du kannst erst <t:{int(tm.time()+error.retry_after)}:R> wieder nach Eiern suchen!", color=discord.Color.red())
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                return await ctx.response.send_message(embed=embed, ephemeral=True)
 
             else:
-                await ctx.response.send_message(f"So ein Pech! Du kannst erst <t:{int(tm.time()+error.retry_after)}:R> wieder `/{ctx.command.name}` nutzen!", ephemeral=True)
+                embed = discord.Embed(title="Fehler", description=f"Du kannst erst <t:{int(tm.time()+error.retry_after)}:R> wieder `/{ctx.command.name}` nutzen!", color=discord.Color.red())
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                return await ctx.response.send_message(embed=embed, ephemeral=True)
+
+        time = tm.localtime()
+        if time.tm_hour < 6 or time.tm_hour >= 22:
+            embed = discord.Embed(title="Fehler", description="Der Osterhase versteckt zwischen 22:00 und 6:00 Uhr neue Eier, aus diesem Grund hat deine Oma dich ins Bett geschickt!", color=discord.Color.red())
+            embed.set_footer(text=f"Made by ItsKoga ❤")
+            return await ctx.response.send_message(embed=embed, ephemeral=True)
+        else:
+            embed = discord.Embed(title="Fehler", description="An dem Oster-event künnen nur verifizierte User teilnehmen! Du kannst dich in <#665566988319326275> mit /verify verifizieren!", color=discord.Color.red())
+            embed.set_footer(text=f"Made by ItsKoga ❤")
+            return await ctx.response.send_message(embed=embed, ephemeral=True)
+
 
     @slash_command(name="collect", description="Geh auf Eiersuche", guild_only=True)
+    @is_day()
+    @is_verified()
     @commands.cooldown(1, 120, commands.BucketType.user)
     async def collect(self, ctx):
         log(f"{ctx.author.name} hat nach Eiern gesucht!", "USER_ACTION")
@@ -147,6 +182,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         
 
     @slash_command(name="throw", description="Wirf ein Ei auf jemanden", guild_only=True)
+    @is_day()
     async def throw(self, ctx, user: discord.User):
         if ctx.author.id == user.id:
             return await ctx.response.send_message("Du kannst nicht auf dich selbst werfen!", ephemeral=True)
@@ -191,6 +227,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         
 
     @slash_command(name="fight", description="Fordere jemanden zum Kampf heraus", guild_only=True)
+    @is_day()
     async def fight(self, ctx, user: discord.User, bet: int):
         if ctx.author.id == user.id:
             return await ctx.response.send_message("Du kannst nicht gegen dich selbst kämpfen!", ephemeral=True)
@@ -278,6 +315,7 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
 
     
     @slash_command(name="group_fight", description="Starte einen Gruppenkampf", guild_only=True)
+    @is_day()
     async def group_fight(self, ctx, bet: int):
         if bet < 1:
             return await ctx.response.send_message("Du musst mindestens 1 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
@@ -438,6 +476,7 @@ Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
 
 
     @slash_command(name="bake", description="Backe ein gekochtes Hühnerei", guild_only=True)
+    @is_day()
     async def bake(self, ctx):
         log(f"{ctx.author.name} hat /bake ausgeführt!", "USER_ACTION")
         check = system.Get.bake_check(ctx.author.id)
@@ -454,6 +493,7 @@ Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
         
 
     @slash_command(name="talisman", description="Zeigt dir deinen Eier Talisman", guild_only=True)
+    @is_day()
     async def talisman(self, ctx, richtung: Option(str, "Wähle welche Chance dein Talisman erhöhen soll", choices=["gekochtes Hühnerei", "ungekochtes Hühnerei"])): # type: ignore
         profile = system.Get.user(ctx.author.id)
         if profile.egg_talisman == 0:
