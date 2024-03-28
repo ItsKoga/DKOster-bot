@@ -50,8 +50,10 @@ class Stats(commands.Cog):
 :egg: : {uncooked}\n\
 <:osterei:962802014226640996> : {cooked}\n\
 Zuletzt getroffen : {last_hit}\n\
-Würfe : {len(throws)}/{len(own_hits)} `{round(100/len(throws)*len(own_hits) if throws else 0,1)}%`\n\
-Abgeworfen : {hits[0]}/{hits[1]} `{round(100/hits[0]*hits[1]if hits[0] else 0,1)}%`\n\
+Anzahl abgeworfen : {len(throws)}\n\
+Anzahl getroffen : {len(own_hits)}\n\
+Anzahl geworfen versucht : {hits[0]}\n\
+Anzahl geworfen getroffen : {hits[1]}\n\
 /collect ausgeführt : {times_collected}", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
