@@ -40,21 +40,25 @@ class Stats(commands.Cog):
         own_hits = [throw for throw in throws if throw.success == True] if throws else []
         times_collected = system.Get. user_collect_amount(user.id)
         points = system.Get.points(user.id)
+        rabbit_foot_amount = system.Get.rabbit_foot_amount(user.id)
+        used_rabbit_foot_amount = system.Get.used_rabbit_foot_amount(user.id)
 
         last_hit = f"<t:{profile.last_hit}:R>" if profile.last_hit != 0 else "Nie"
 
         embed = discord.Embed(title=f"Stats von {user.display_name}", 
                               description= f"Punkte : {points}\n\
-<:Schoko_Ei:1221556659030196284> : {chocolate_eggs}\n\
-:cake: : {cakes}\n\
-:egg: : {uncooked}\n\
+<:Schoko_Ei:1221556659030196284>: {chocolate_eggs}\n\
+:cake:: {cakes}\n\
+:egg:: {uncooked}\n\
 <:osterei:962802014226640996> : {cooked}\n\
-Zuletzt getroffen : {last_hit}\n\
-Anzahl abgeworfen : {len(throws)}\n\
-Anzahl getroffen : {len(own_hits)}\n\
-Anzahl geworfen versucht : {hits[0]}\n\
-Anzahl geworfen getroffen : {hits[1]}\n\
-/collect ausgeführt : {times_collected}", color=0xec6726)
+Hasenpfoten: {rabbit_foot_amount}\n\
+Benutzte Hasenpfoten: {used_rabbit_foot_amount}\n\
+Zuletzt getroffen: {last_hit}\n\
+abgeworfen worden: {hits[0]}\n\
+getroffen worden: {hits[1]}\n\
+jemanden abgeworfen: {len(throws)}\n\
+jemanden getroffen: {len(own_hits)}\n\
+/collect ausgeführt: {times_collected}", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
         await ctx.response.send_message(embed=embed)

@@ -96,8 +96,8 @@ class Get:
             return User(id, 0, 0, 0, 0)
         
     def probabilities(id):
-        profile = Get.user(id)
-        cooked = 0.8 if profile.egg_talisman == 0 else 0.9 if profile.egg_talisman == 1 else 0.7
+        talisman = Get.talisman_type(id)
+        cooked = 0.8 if talisman == 0 else 0.9 if talisman == 2 else 0.7
         uncooked = round(1 - cooked, 1)
         return (cooked, uncooked)
         
@@ -276,10 +276,14 @@ class Get:
             return True
         else:
             return False
-        
-    def rabbit_foot_check(id):
-        rabbit_foot = Database.execute_and_fetchone("SELECT rabbit_foot_count FROM users WHERE user_id = %s", (id,))
-        return rabbit_foot[0]
+    
+    def rabbit_foot_amount(id):
+        rabbit_foot = Database.execute_and_fetchall("SELECT rabbit_foot_count FROM users WHERE user_id = %s", (id,))
+        return rabbit_foot[0][0]
+    
+    def used_rabbit_foot_amount(id):
+        rabbit_foot = Database.execute_and_fetchall("SELECT used_rabbit_foot_count FROM users WHERE user_id = %s", (id,))
+        return rabbit_foot[0][0]
     
     def user_collect_amount(id):
         collect = Database.execute_and_fetchone("SELECT used_collect FROM users WHERE user_id = %s", (id,))
@@ -288,7 +292,19 @@ class Get:
     
     def talisman_check(id):
         talisman = Database.execute_and_fetchone("SELECT egg_talisman FROM users WHERE user_id = %s", (id,))
-        return True if talisman[0] > 0 else False
+        return False if talisman[0] > 0 else True
+    
+    def talisman_type(id):
+        talisman = Database.execute_and_fetchone("SELECT egg_talisman FROM users WHERE user_id = %s", (id,))
+        return talisman[0]
+    
+    def throw_percent(points):
+        if points <=30:
+            return random.randint(20,50)
+        elif points <= 150:
+            return random.randint(7, 20)
+        else:
+            return random.randint(2, 7)
 
 
 class Add:
@@ -369,8 +385,10 @@ class Update:
 
 class Gen:
     def nest(location, ctx, rabbit_foot):
+        if rabbit_foot != 0:
+            rabbit_foot = True
         class Nest:
-            def __init__(self, location, type, schokoei=0, gekochtesEi=0, ungekochtesEi=0, egg_talisman=0, rabbit_foot_count=0, rabbit_foot=0):
+            def __init__(self, location, type, schokoei=0, gekochtesEi=0, ungekochtesEi=0, egg_talisman=0, rabbit_foot_count=0):
                 self.location = location
                 self.type = type
                 self.schokoei = schokoei
@@ -378,7 +396,6 @@ class Gen:
                 self.ungekochtesEi = ungekochtesEi
                 self.egg_talisman = egg_talisman
                 self.rabbit_foot_count = rabbit_foot_count
-                self.rabbit_foot = True if rabbit_foot != 0 else False
 
         probabilities = Get.probabilities(ctx.author.id)
         type = random.choices(["empty", "normal", "special"], weights=[0.25, 0.7, 0.05])[0]
@@ -386,16 +403,16 @@ class Gen:
             return Nest(location=location, type="empty")
         elif type == "normal":
             return Nest(location=location, type="normal",
-                                                   schokoei=random.randint(1, 10),
+                                                   schokoei=random.randint(1, 10) * (2 if rabbit_foot else 1),
                                                    gekochtesEi=0 if random.random() < probabilities[0] else (random.randint(1, 2) * (2 if rabbit_foot else 1)),
                                                    ungekochtesEi=0 if random.random() < probabilities[1] else (random.randint(1, 2) * (2 if rabbit_foot else 1)))
         elif type == "special":
             return Nest(location=location, type="special",
-                                                   schokoei=random.randint(5, 15),
-                                                   gekochtesEi=(random.randint(2, 4) * (2 if rabbit_foot else 1)) if random.random() <= 0.9 else 0,
-                                                   ungekochtesEi=(random.randint(2, 4) * (2 if rabbit_foot else 1)) if random.random() <= 0.1 else 0,
-                                                   egg_talisman=1 if Get.talisman_check(ctx.author.id) or random.random() <= 0.03 else 0,
-                                                   rabbit_foot_count=1 if random.random() <= 0.25 else 0)
+                                                   schokoei=random.randint(5, 15) * (2 if rabbit_foot else 1),
+                                                   gekochtesEi=0 if random.random() < probabilities[0] else (random.randint(2, 4) * (2 if rabbit_foot else 1)),
+                                                   ungekochtesEi=0 if random.random() < probabilities[1] else (random.randint(2, 4) * (2 if rabbit_foot else 1)),
+                                                   egg_talisman=1 if Get.talisman_check(ctx.author.id) and random.random() <= 0.03 else 0,
+                                                   rabbit_foot_count=1 * (2 if rabbit_foot else 1) if random.random() <= 0.20 else 0)
         
     def solo_fight_text(winner, loser, chocolate_egg_bet, participants):
         strig = random.choice(["Die beiden Eier scheinen einiges auszuhalten.",
@@ -442,21 +459,15 @@ class Translate:
         else:
             nest_info = ""
             if nest.schokoei != 0:
-                if nest.rabbit_foot:
-                    nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284> (Hasenpfoten Boost)\n"
-                else:
-                    nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284>\n"
+                nest_info += f"{nest.schokoei}x <:Schoko_Ei:1221556659030196284>\n"
             if nest.gekochtesEi != 0:
-                if nest.rabbit_foot:
-                    nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996> (Hasenpfoten Boost)\n"
-                else:
-                    nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996>\n"
+                nest_info += f"{nest.gekochtesEi}x <:osterei:962802014226640996>\n"
             if nest.ungekochtesEi != 0:
                 nest_info += f"{nest.ungekochtesEi}x :egg:\n"
             if nest.egg_talisman != 0:
                 nest_info += f"Eier Talisman\n"
             if nest.rabbit_foot_count != 0:
-                nest_info += f"Hasenpfote\n"
+                nest_info += f"{nest.rabbit_foot_count}x Hasenpfote\n"
             return nest_info.strip()
         
 
