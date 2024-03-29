@@ -31,18 +31,18 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title="<:info:1032012910702104687> Osterevent", 
-                                      description="Sammle während des Events so viele Punkte wie möglich, suche Osternester, wirf andere mit Eiern ab, kämpfe gegen sie im Eierditschen und lasse Kuchen von deiner Oma backen, um die Punkte zu sichern!", color=0xec6726)
+                                      description="Sammle während des Events so viele Punkte wie möglich, suche <:Eier_Nest:1221556705490636880>, wirf andere mit :egg: ab, kämpfe gegen sie im Eierditschen und lasse :cake: von deiner Oma backen, um die Punkte zu sichern!", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            @discord.ui.button(emoji=":Schoko_Ei:1221556659030196284>", style=discord.ButtonStyle.gray)
+            @discord.ui.button(emoji="<:Schoko_Ei:1221556659030196284>", style=discord.ButtonStyle.gray)
             async def schoko(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title="<:Schoko_Ei:1221556659030196284> Schokoladenei", 
-                                      description="Schokoladeneier finden sich in Osternestern und lassen sich zu Kuchen verarbeiten, sodass diese nicht mehr gestohlen werden können. Ein Schokoladenei ist 1 Punkt wert.", color=0xec6726)
+                                      description="<:Schoko_Ei:1221556659030196284> finden sich in <:Eier_Nest:1221556705490636880> und lassen sich zu :cake: verarbeiten, sodass diese nicht mehr gestohlen werden können. <:Schoko_Ei:1221556659030196284> ist 1 Punkt wert.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
@@ -53,7 +53,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title=":egg: Rohes Ei", 
-                                      description="Rohe Eier finden sich in Osternestern, mit ihnen können andere Spieler abgeworfen werden, um Schokoeier von diesen zu klauen. Außerdem werden sie benötigt, um einen Kuchen zu backen. Es ist jedoch zu beachten, dass sie nach 3 Stunden verfaulen.", color=0xec6726)
+                                      description="Rohe Eier finden sich in <:Eier_Nest:1221556705490636880>, mit ihnen können andere Spieler abgeworfen werden, um <:Schoko_Ei:1221556659030196284> von diesen zu klauen. Außerdem werden sie benötigt, um einen :cake zu backen. Es ist jedoch zu beachten, dass sie nach 3 Stunden verfaulen.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
@@ -64,7 +64,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title="<:osterei:962802014226640996> Gekochtes Ei", 
-                                      description="Mit diesen Eiern lässt sich mit /fight Eierditschen spielen, sowie mit /groupfight ein Gruppenkampf starten. Gespielt wird um Schokoeier, es kann eine beliebige Anzahl gesetzt werden. Bei einem normalen Eierditschen erhält der Gewinner alle Schokoeier, bei einem Gruppenkampf der erste Platz 60% des Gesamteinsatzes, Platz 2 25% und Platz 3 15%. Wichtig zu beachten ist, dass die Eier nach einem Tag verfaulen.", color=0xec6726)
+                                      description="Mit <:osterei:962802014226640996> lässt sich mit /fight Eierditschen spielen, sowie mit /groupfight ein Gruppenkampf starten. Gespielt wird um <:Schoko_Ei:1221556659030196284>, es kann eine beliebige Anzahl gesetzt werden. Bei einem normalen Eierditschen erhält der Gewinner alle <:Schoko_Ei:1221556659030196284>, bei einem Gruppenkampf der erste Platz 60% des Gesamteinsatzes, Platz 2 25% und Platz 3 15%. Wichtig zu beachten ist, dass die :egg: nach einem Tag verfaulen.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
@@ -75,7 +75,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title=":cake: Kuchen", 
-                                      description="Aus 10 Schokoladeneiern und 3 Rohen Eiern lässt sich von deiner Oma ein Kuchen backen, welcher 10 Punkte wert ist. Deine Oma beschützt diesen Kuchen, sodass er nicht geklaut werden kann.", color=0xec6726)
+                                      description="Aus 10x <:Schoko_Ei:1221556659030196284> und 3x :egg: lässt sich von deiner Oma ein :cake: backen, welcher 10 Punkte wert ist. Deine Oma beschützt diesen Kuchen, sodass er nicht geklaut werden kann.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
@@ -86,7 +86,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title=":star: Special Items", 
-                                      description="- **Eiertalisman:** Dieser erhöht die Chance auf gekochte oder ungekochte Eier, mit /talisman kann eingestellt werden welche Chance erhöht werden soll. Erhöht außerdem minimal die Anzahl der Eier pro Nest.\n\
+                                      description="- **Eiertalisman:** Dieser erhöht die Chance auf <:osterei:962802014226640996> oder :egg:, mit /talisman kann eingestellt werden welche Chance erhöht werden soll. Erhöht außerdem minimal die Anzahl der Eier pro Nest.\n\
 - **Hasenpfote:** Mit /hasenpfote kann diese eingesetzt werden und verdoppelt die Eier bei der nächsten Suche.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
