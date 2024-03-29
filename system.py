@@ -149,7 +149,7 @@ class Get:
                 self.creator_id = creator_id
                 self.type = type
                 self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-86400 and type == "gekochtes Hühnerei")) else False
-        egg = Database.execute_and_fetchone("SELECT * FROM eggs WHERE owner_id = %s", (id,))
+        egg = Database.execute_and_fetchone("SELECT * FROM eggs WHERE egg_id = %s", (id,))
         time = tm.time()
         if egg:
             return Egg(egg[0], egg[1], egg[2], egg[3], egg[4], time)

@@ -351,11 +351,20 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
 
             async def on_timeout(self):
                 await self.message.edit(view=None)
+                if bet*len(self.value) > 500:
+                    return await self.message.reply("Das Maximum an <:Schoko_Ei:1221556659030196284> für einen Gruppenkampf beträgt 500x <:Schoko_Ei:1221556659030196284>!")
+                
+                for user in self.value:
+                    check = system.Get.type_eggs(user, "gekochtes Hühnerei")
+                    if check == []:
+                        self.value.remove(user)
+                        log(f"/group_fight : {user} hat kein gekochtes Hühnerei!", "ERROR")
+                    else:
+                        system.Delete.egg(check[0].id)
+                        log(f"/group_fight : {user} sein gekochtes Hühnerei wurde entfernt!", "SYSTEM")
+
                 if len(self.value) < 4:
                     return await self.message.reply("Nicht genug Spieler für den Gruppenkampf!")
-
-                if bet*len(self.value) > 500:
-                    return await self.message.reply("Die maximale <:Schoko_Ei:1221556659030196284> für den Gruppenkampf beträgt 500 <:Schoko_Ei:1221556659030196284>!")
                 
                 string = "\n".join([f"- <@{user}>" for user in self.value])
                 embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!\n**Teilnehmer:** \n{string}", color=0xec6726)
@@ -396,8 +405,6 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                     log(f"/group_fight : {winner} hat den Kampf gegen {looser} gewonnen!", "SYSTEM")
         
                     top.append(looser)
-                    system.Delete.egg(system.Get.egg_check(looser, "gekochtes Hühnerei").id)
-                    log(f"/group_fight : {looser} sein gekochtes Hühnerei wurde entfernt!", "SYSTEM")
 
                     embed = discord.Embed(title="Gruppenkampf", description=f"<@{player1}> und <@{player2}> kämpfen!", color=0xec6726)
                     embed.set_footer(text=f"Made by ItsKoga ❤")
@@ -433,6 +440,7 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
 
                 winner = random.choice(self.value)
                 looser = self.value[0] if winner == self.value[1] else self.value[1]
+                system.Delete.egg(system.Get.egg_check(looser, "gekochtes Hühnerei").id)
                 log(f"/group_fight : {winner} hat den Gruppenkampf gewonnen!", "SYSTEM")
 
                 top.append(looser)
