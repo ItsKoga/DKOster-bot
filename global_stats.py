@@ -34,11 +34,11 @@ for user in used_collects:
     amount_3 += user[8]
 print(f"/collect ausgeführt: {amount_3}")
 
-#found_nests = [user for user in users if user[9] != 0]
-#amount_4 = 0
-#for user in found_nests:
-#    amount_4 += user[9]
-#print(f"Nester gefunden(nicht leer): {amount_4}")
+found_nests = [user for user in users if user[9] != 0]
+amount_4 = 0
+for user in found_nests:
+    amount_4 += user[9]
+print(f"Nester gefunden(nicht leer): {amount_4}")
 
 print("\n")
 
