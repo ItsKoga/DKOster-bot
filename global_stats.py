@@ -1,4 +1,7 @@
 import system
+import time
+
+start = time.time()
 
 users = system.Database.execute_and_fetchall("SELECT * FROM users")
 for user in users:
@@ -39,6 +42,12 @@ amount_4 = 0
 for user in found_nests:
     amount_4 += user[9]
 print(f"Nester gefunden(nicht leer): {amount_4}")
+
+print("Top 5 User, die am meisten /collect ausgeführt haben:")
+users.sort(key=lambda x: x[8], reverse=True)
+for i in range(5):
+    print(f"{i + 1}. <@{users[i][0]}> : {users[i][8]}")
+
 
 print("\n")
 
@@ -180,3 +189,5 @@ for location in ["1", "2", "3", "4", "5"]:
     print(f"An der Location {location} wurde {data[0][1]} mal gesucht")
 
 
+
+print(f"\nTime: {time.strftime('%M:%S', time.gmtime(time.time() - start))}")

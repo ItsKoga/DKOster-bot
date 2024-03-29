@@ -373,6 +373,7 @@ class Update:
 
     def reset_last_fight(id):
         Database.execute_and_commit("UPDATE users SET last_fight = 0 WHERE user_id = %s", (id,))
+        Add.egg(id, "ungekochtes Hühnerei")
 
     def user_add_collect(id):
         Database.execute_and_commit("UPDATE users SET used_collect = used_collect + 1 WHERE user_id = %s", (id,))

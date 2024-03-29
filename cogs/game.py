@@ -549,8 +549,6 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
             async def join(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id in self.value:
                     return await interaction.response.send_message("Du bist bereits beigetreten!", ephemeral=True)
-                if not system.Get.group_fight_check(interaction.user.id):
-                    return await interaction.response.send_message("Du hast in den letzten 5 Minuten bereits an einem Gruppenkampf teilgenommen!", ephemeral=True)
                 if len(system.Get.type_eggs(interaction.user.id, "Schokoei")) < bet:
                     return await interaction.response.send_message("Du hast nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
                 if system.Get.egg_check(interaction.user.id, "gekochtes Hühnerei") == False:
