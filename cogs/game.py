@@ -125,7 +125,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                 if interaction.user.id != self.value[0]:
                     return await interaction.response.send_message("Du kannst nicht für jemand anderen ein Nest auswählen!", ephemeral=True)
                 await interaction.message.edit(view=None)
-                embed = discord.Embed(title="Eiersuche", description=("Du hattest eine Hasenpfote, aus diesem Grund wurden alle Eier und Hasenpfoten verdoppelt.\n\n" if system.Get.rabbit_foot_amount(ctx.author.id) else "")+f"**{button.label}.<:Eier_Nest:1221556705490636880>** (Deine Suche: {locations[button.label].type}):\n{system.Translate.nest(locations[button.label])}", color=0xec6726)
+                embed = discord.Embed(title="Eiersuche", description=("Du hattest eine Hasenpfote, aus diesem Grund wurden alle Eier und Hasenpfoten verdoppelt.\n\n" if system.Get.rabbit_foot_amount(ctx.author.id) else "")+f"**{button.label}.<:Eier_Nest:1221556705490636880>** (Deine Suche: {locations[button.label].type if locations[button.label].type != "empty" else "leer"}):\n{system.Translate.nest(locations[button.label])}", color=0xec6726)
                 for location in locations:
                     if location != button.label:
                         embed.add_field(name=f"{location}.<:Eier_Nest:1221556705490636880> "+(f" ({locations[location].type})" if locations[location].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[location]), inline=True)

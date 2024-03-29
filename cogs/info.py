@@ -64,7 +64,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title="<:osterei:962802014226640996> Gekochtes Ei", 
-                                      description="Mit <:osterei:962802014226640996> lässt sich mit /fight Eierditschen spielen, sowie mit /groupfight ein Gruppenkampf starten. Gespielt wird um <:Schoko_Ei:1221556659030196284>, es kann eine beliebige Anzahl gesetzt werden. Bei einem normalen Eierditschen erhält der Gewinner alle <:Schoko_Ei:1221556659030196284>, bei einem Gruppenkampf der erste Platz 60% des Gesamteinsatzes, Platz 2 25% und Platz 3 15%. Wichtig zu beachten ist, dass die :egg: nach einem Tag verfaulen.", color=0xec6726)
+                                      description="Mit <:osterei:962802014226640996> lässt sich mit /fight Eierditschen spielen, sowie mit /groupfight ein Gruppenkampf starten. Gespielt wird um <:Schoko_Ei:1221556659030196284>, es kann eine beliebige Anzahl gesetzt werden. Bei einem normalen Eierditschen erhält der Gewinner alle <:Schoko_Ei:1221556659030196284>, bei einem Gruppenkampf der erste Platz 60% des Gesamteinsatzes, Platz 2 25% und Platz 3 15%. Wichtig zu beachten ist, dass die <:osterei:962802014226640996> nach einem Tag verfaulen.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
@@ -87,7 +87,7 @@ class Info(commands.Cog):
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title=":star: Special Items", 
                                       description="- **Eiertalisman:** Dieser erhöht die Chance auf <:osterei:962802014226640996> oder :egg:, mit /talisman kann eingestellt werden welche Chance erhöht werden soll. Erhöht außerdem minimal die Anzahl der Eier pro Nest.\n\
-- **Hasenpfote:** Mit /hasenpfote kann diese eingesetzt werden und verdoppelt die Eier bei der nächsten Suche.", color=0xec6726)
+- **Hasenpfote:** Eine Hasenpfote verdoppelt deine nächste Suche, du erhältst doppelt so viele Eier Hasenpfoten.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
