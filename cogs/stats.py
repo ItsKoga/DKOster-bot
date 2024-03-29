@@ -63,7 +63,7 @@ jemanden getroffen: {len(own_hits)}\n\
 Nester gefunden: {nests_found}", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
-        await ctx.response.send_message(embed=embed)
+        await ctx.response.send_message(embed=embed, ephemeral=True)
 
 
 
@@ -75,7 +75,7 @@ Nester gefunden: {nests_found}", color=0xec6726)
         embed = discord.Embed(title="Leaderboard", description=system.Translate.leaderboard(10) + f"\n\n{system.Get.top_position(ctx.author.id)}. Du - {system.Get.points(ctx.author.id)}", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
-        await ctx.response.send_message(embed=embed)
+        await ctx.response.send_message(embed=embed, ephemeral=True)
 
 
 

@@ -125,7 +125,7 @@ class Info(commands.Cog):
         embed.set_footer(text=f"Made by ItsKoga ❤")
         log("/info : Embed erstellt")
         
-        await ctx.response.send_message(embed=embed, view=view)
+        await ctx.response.send_message(embed=embed, view=view, ephemeral=True)
         log("/info : Nachricht gesendet")
 
             

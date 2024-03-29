@@ -97,8 +97,8 @@ class Get:
         
     def probabilities(id):
         talisman = Get.talisman_type(id)
-        cooked = 0.8 if talisman == 0 else 0.9 if talisman == 2 else 0.7
-        uncooked = round(1 - cooked, 1)
+        cooked = 0.5 if talisman == 0 else 0.6 if talisman == 2 else 0.4
+        uncooked = round(0.7 - cooked, 1)
         return (cooked, uncooked)
         
     def points(id):
@@ -370,6 +370,9 @@ class Update:
     
     def last_fight(id):
         Database.execute_and_commit("UPDATE users SET last_fight = %s WHERE user_id = %s", (tm.time(), id))
+
+    def reset_last_fight(id):
+        Database.execute_and_commit("UPDATE users SET last_fight = 0 WHERE user_id = %s", (id,))
 
     def user_add_collect(id):
         Database.execute_and_commit("UPDATE users SET used_collect = used_collect + 1 WHERE user_id = %s", (id,))

@@ -16,6 +16,7 @@ import time as tm
 import discord
 
 log = log_helper.create("Game")
+group_fight_running = False
 
 
 
@@ -23,13 +24,14 @@ def is_verified():
     def verified(ctx):
         url = f"https://combi.dev/API/CheckVerification?ID={ctx.author.id}&key={os.getenv('COMBI_API_KEY')}"
         response = requests.get(url).json()
+        log(f"Verifizierung Anfrage: {response}", "SYSTEM")
         if response["success"] == False:
-            log(f"Bei der Verifizierung Anfrage ist ein Fehler aufgetreten! {response}", "ERROR")
+            log(f"Bei der Verifizierung Anfrage ist ein Fehler aufgetreten! {response}", "CRITICAL")
             return True
         if response["verified"]:
             log(f"{ctx.author.name} ist verifiziert!", "USER_ACTION")
             return True
-        log(f"{ctx.author.name} ist nicht verifiziert!", "USER_ACTION")
+        log(f"{ctx.author.name} ist nicht verifiziert!", "ERROR")
         return False
     return commands.check(verified)
 
@@ -65,7 +67,7 @@ class Game(commands.Cog):
             embed.set_footer(text=f"Made by ItsKoga ❤")
             return await ctx.response.send_message(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(title="Fehler", description="An dem Oster-event künnen nur verifizierte User teilnehmen! Du kannst dich in <#665566988319326275> mit /verify verifizieren!", color=discord.Color.red())
+            embed = discord.Embed(title="Fehler", description="An dem Oster-event können nur verifizierte User teilnehmen! Du kannst dich in <#665566988319326275> mit /verify verifizieren!", color=discord.Color.red())
             embed.set_footer(text=f"Made by ItsKoga ❤")
             return await ctx.response.send_message(embed=embed, ephemeral=True)
         
@@ -78,14 +80,17 @@ Führe jetzt wieder /collect im Channel <#1222634664733446154> aus!\n\n\
 Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping einfach mit dem /notify Befehl.", color=discord.Color.random())
             embed.set_footer(text=f"Made by ItsKoga ❤")
             if system.Get.notifications(ctx.author.id):
-                await ctx.author.send(embed=embed)
+                try:
+                    await ctx.author.send(embed=embed)
+                except discord.Forbidden:
+                    log(f"{ctx.author.name} hat DMs deaktiviert!", "ERROR")
 
 
     @slash_command(name="collect", description="Geh auf Eiersuche", guild_only=True)
     @is_day()
     @is_verified()
     @commands.cooldown(1, 120, commands.BucketType.user)
-    async def collect(self, ctx):
+    async def collect(self, ctx, location: Option(str, "Wo willst du suchen", choices=["1", "2", "3", "4", "5"], required=False)=None): # type: ignore
         log(f"{ctx.author.name} hat nach Eiern gesucht!", "USER_ACTION")
         profile = system.Get.user(ctx.author.id)
         embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=0xec6726)
@@ -96,8 +101,8 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         rabbit_foot = system.Get.rabbit_foot_amount(ctx.author.id)
         while True:
             locations = {}
-            for location in ("1", "2", "3", "4", "5"):
-                locations[location] = system.Gen.nest(location, ctx, rabbit_foot)
+            for loc in ("1", "2", "3", "4", "5"):
+                locations[loc] = system.Gen.nest(loc, ctx, rabbit_foot)
 
             empty = 0
             for nest in locations:
@@ -117,7 +122,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
 
             async def on_timeout(self):
                 if self.value[1] == False:
-                    embed = discord.Embed(title="Eiersuche", description="Du hast zu lange gebraucht um ein Nest auszuwählen!", color=discord.Color.red())
+                    embed = discord.Embed(title="Eiersuche", description="Du hast zu lange gebraucht um ein <:Eier_Nest:1221556705490636880> auszuwählen!", color=discord.Color.red())
                     embed.set_footer(text=f"Made by ItsKoga ❤")
                     await self.message.edit(embed=embed, view=None)
 
@@ -125,13 +130,13 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                 if interaction.user.id != self.value[0]:
                     return await interaction.response.send_message("Du kannst nicht für jemand anderen ein Nest auswählen!", ephemeral=True)
                 await interaction.message.edit(view=None)
-                embed = discord.Embed(title="Eiersuche", description=("Du hattest eine Hasenpfote, aus diesem Grund wurden alle Eier und Hasenpfoten verdoppelt.\n\n" if system.Get.rabbit_foot_amount(ctx.author.id) else "")+f"**{button.label}.<:Eier_Nest:1221556705490636880>** (Deine Suche: {locations[button.label].type if locations[button.label].type != "empty" else "leer"}):\n{system.Translate.nest(locations[button.label])}", color=0xec6726)
-                for location in locations:
-                    if location != button.label:
-                        embed.add_field(name=f"{location}.<:Eier_Nest:1221556705490636880> "+(f" ({locations[location].type})" if locations[location].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[location]), inline=True)
+                embed = discord.Embed(title="Eiersuche", description=("Du hattest eine Hasenpfote, aus diesem Grund wurden alle Eier und Hasenpfoten verdoppelt.\n\n" if system.Get.rabbit_foot_amount(ctx.author.id) else "")+f"**{button.label}.<:Eier_Nest:1221556705490636880>** (Deine Suche: "+(locations[button.label].type if locations[button.label].type != "empty" else "leer")+f"):\n{system.Translate.nest(locations[button.label])}", color=0xec6726)
+                for loc in locations:
+                    if loc != button.label:
+                        embed.add_field(name=f"{loc}.<:Eier_Nest:1221556705490636880> "+(f" ({locations[loc].type})" if locations[loc].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[loc]), inline=True)
                     else:
-                        rewards = locations[location]
-                        system.Update.stats_location(location)
+                        rewards = locations[loc]
+                        system.Update.stats_location(loc)
 
                 embed.set_footer(text=f"Made by ItsKoga ❤")
 
@@ -187,9 +192,55 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
             async def five(self, button: discord.ui.Button, interaction: discord.Interaction):
                 await self.show_nest(button, interaction)
 
-        view = View()
+        if location == None:
+            log(f"{ctx.author.name} hat keine Vorwahl getroffen!", "SYSTEM")
+            view = View()
+            log("/collect : View wurde erstellt!", "SYSTEM")
 
-        await ctx.response.send_message(embed=embed, view=view)
+            await ctx.response.send_message(ctx.author.mention, embed=embed, view=view)
+            log("/collect : Embed wurde gesendet!", "SYSTEM")
+        else:
+            log(f"/collect : {ctx.author.name} hat in der Vorwahl {location} ausgewählt!", "SYSTEM")
+            embed = discord.Embed(title="Eiersuche", description=f"**{location}.<:Eier_Nest:1221556705490636880>** (Deine Suche: "+(locations[location].type if locations[location].type != "empty" else "leer")+f"):\n{system.Translate.nest(locations[location])}", color=0xec6726)
+            log("/collect : Embed wurde erstellt!", "SYSTEM")
+            for loc in locations:
+                if loc != location:
+                    embed.add_field(name=f"{loc}.<:Eier_Nest:1221556705490636880> "+(f" ({locations[loc].type})" if locations[loc].type != 'empty' else ' (leer)'), value=system.Translate.nest(locations[loc]), inline=True)
+                else:
+                    rewards = locations[loc]
+                    system.Update.stats_location(loc)
+            log("/collect : Nester wurden eingetragen!", "SYSTEM")
+            embed.set_footer(text=f"Made by ItsKoga ❤")
+            await ctx.response.send_message(ctx.author.mention, embed=embed)
+            log("/collect : Embed wurde gesendet!", "SYSTEM")
+            if system.Get.rabbit_foot_amount(ctx.author.id)!= 0:
+                system.Update.user_remove_one_rabbit_foot_count(ctx.author.id)
+
+            log(f"{ctx.author.name} hat {rewards.schokoei} Schokoeier, {rewards.gekochtesEi} gekochte Hühnereier, {rewards.ungekochtesEi} ungekochte Hühnereier, {rewards.egg_talisman} Eier Talisman und {rewards.rabbit_foot_count} Hasenpfoten gefunden!")
+
+            for i in range(rewards.schokoei):
+                system.Add.egg(ctx.author.id, "Schokoei")
+                log(f"/collect : {ctx.author.name} hat ein Schokoei erhalten!", "SUCCESS")  
+            for i in range(rewards.gekochtesEi):
+                system.Add.egg(ctx.author.id, "gekochtes Hühnerei")
+                log(f"/collect : {ctx.author.name} hat ein gekochtes Hühnerei erhalten!", "SUCCESS")
+            for i in range(rewards.ungekochtesEi):
+                system.Add.egg(ctx.author.id, "ungekochtes Hühnerei")
+                log(f"/collect : {ctx.author.name} hat ein ungekochtes Hühnerei erhalten!", "SUCCESS")
+            if rewards.egg_talisman:
+                system.Update.user_egg_talisman(ctx.author.id, 1)
+                log(f"/collect : {ctx.author.name} hat einen Eier Talisman erhalten!", "SUCCESS")
+            for i in range(rewards.rabbit_foot_count):
+                system.Update.user_add_one_rabbit_foot_count(ctx.author.id)
+                log(f"/collect : {ctx.author.name} hat eine Hasenpfote erhalten!", "SUCCESS")
+
+            if rewards.schokoei or rewards.gekochtesEi or rewards.ungekochtesEi:
+                system.Update.stats_add_nests_found()
+                system.Update.user_add_found_nests(ctx.author.id)
+
+            log(f"{ctx.author.name} wurden die Belohnungen hinzugefügt!", "SUCCESS")
+            system.Get.points(ctx.author.id)
+            system.Update.user_add_collect(ctx.author.id)
 
 
         
@@ -332,15 +383,24 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
     @slash_command(name="group_fight", description="Starte einen Gruppenkampf", guild_only=True)
     @is_day()
     async def group_fight(self, ctx, bet: int):
+        global group_fight_running
+        if group_fight_running == True:
+            log(f"{ctx.author.name} hat versucht einen Gruppenkampf zu starten, obwohl bereits einer läuft!", "ERROR")
+            return await ctx.response.send_message("Es läuft bereits ein Gruppenkampf!", ephemeral=True)
         if bet < 4:
+            log(f"{ctx.author.name} hat versucht einen Gruppenkampf zu starten, aber zu wenig <:Schoko_Ei:1221556659030196284> gesetzt!", "ERROR")
             return await ctx.response.send_message("Du musst mindestens 4 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
         if bet > 25:
+            log(f"{ctx.author.name} hat versucht einen Gruppenkampf zu starten, aber zu viele <:Schoko_Ei:1221556659030196284> gesetzt!", "ERROR")
             return await ctx.response.send_message("Du kannst maximal 25 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
         if len(system.Get.type_eggs(ctx.author.id, "Schokoei")) < bet:
+            log(f"{ctx.author.name} hat versucht einen Gruppenkampf zu starten, aber nicht genug <:Schoko_Ei:1221556659030196284>!", "ERROR")
             return await ctx.response.send_message("Du hast nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
         if system.Get.egg_check(ctx.author.id, "gekochtes Hühnerei") == False:
+            log(f"{ctx.author.name} hat versucht einen Gruppenkampf zu starten, aber kein <:osterei:962802014226640996>!", "ERROR")
             return await ctx.response.send_message("Du hast kein <:osterei:962802014226640996>!", ephemeral=True)
         system.Update.last_fight(ctx.author.id)
+        group_fight_running = True
         log(f"{ctx.author.name} hat einen Gruppenkampf gestartet!", "USER_ACTION")
 
         class View(discord.ui.View):
@@ -362,12 +422,17 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                     else:
                         system.Delete.egg(check[0].id)
                         log(f"/group_fight : {user} sein gekochtes Hühnerei wurde entfernt!", "SYSTEM")
+                global group_fight_running
 
                 if len(self.value) < 4:
+                    for user in self.value:
+                        system.Update.reset_last_fight(user)
+                        log(f"/group_fight : {user} hat sein gekochtes Hühnerei zurück erhalten!", "SYSTEM")
+                        group_fight_running = False
                     return await self.message.reply("Nicht genug Spieler für den Gruppenkampf!")
                 
                 string = "\n".join([f"- <@{user}>" for user in self.value])
-                embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!\n**Teilnehmer:** \n{string}", color=0xec6726)
+                embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!\n**Teilnehmer:({len(self.value)}/4)** \n{string}", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 log(f"/group_fight : Gruppenkampf beginnt mit {len(self.value)} Spielern!", "SYSTEM")
                 msg = await self.message.reply(embed=embed)
@@ -476,6 +541,7 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
 <@{top[1]}> erhält {rewards[2]}x <:Schoko_Ei:1221556659030196284>!", color=discord.Color.green())
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 await msg.edit(embed=embed)
+                group_fight_running = False
                 log(f"/group_fight : Der Gruppenkampf ist beendet!", "SYSTEM")
 
 
@@ -494,15 +560,19 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                 system.Update.last_fight(interaction.user.id)
                 log(f"/group_fight : {interaction.user.name} ist dem Gruppenkampf beigetreten!", "USER_ACTION")
 
-                self.message.embeds[0].fields[0].value = "\n".join([f"- <@{user}>" for user in self.value])
+                self.message.embeds[0].set_field_at(0, name=f"Teilnehmer({len(self.value)}/4)", value="\n".join([f"- <@{user}>" for user in self.value]), inline=False)
                 await self.message.edit(embed=self.message.embeds[0])
+
 
         embed = discord.Embed(title="Gruppenkampf", description=f"{ctx.author.mention} hat einen Gruppenkampf gestartet! Möchtest du beitreten? Der Kampf beginnt <t:{int(tm.time()+60)}:R>.\n\
 Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
-        embed.add_field(name="Teilnehmer", value=f"- <@{ctx.author.id}>", inline=False)
+        embed.add_field(name="Teilnehmer(1/4)", value=f"- <@{ctx.author.id}>", inline=False)
         embed.set_footer(text=f"Made by ItsKoga ❤")
+        log(f"/group_fight : Embed wurde erstellt!", "SYSTEM")
         view = View()
+        log(f"/group_fight : View wurde erstellt!", "SYSTEM")
         await ctx.response.send_message(embed=embed, view=view)
+        log(f"/group_fight : Embed wurde gesendet!", "SYSTEM")
 
 
 
@@ -517,11 +587,11 @@ Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
             embed = discord.Embed(title="Kuchen backen", description="Du hast nicht alle Zutaten, daher kann dir deine Oma nicht helfen!", color=discord.Color.red())
             embed.add_field(name="Zutaten", value=f"3x :egg: (Du besitzt: {amount_uncooked})\n10x <:Schoko_Ei:1221556659030196284> (Du besitzt: {amount_chocolate})", inline=False)
             embed.set_footer(text=f"Made by ItsKoga ❤")
-            return await ctx.response.send_message(embed=embed)
+            return await ctx.response.send_message(embed=embed, ephemeral=True)
         log(f"{ctx.author.name} hat ein kuchen gebacken!", "USER_ACTION")
         system.Add.cake(ctx.author.id)
         embed = discord.Embed(title="Kuchen backen", description="Deine Oma hat dir geholfen einen :cake: zu backen! Da niemand von einer Oma klaut sind deine Punkte sicher!", color=discord.Color.green())
-        await ctx.response.send_message(embed=embed)
+        await ctx.response.send_message(embed=embed, ephemeral=True)
         system.Get.points(ctx.author.id)
         
 
