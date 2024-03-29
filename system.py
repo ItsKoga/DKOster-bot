@@ -258,7 +258,7 @@ class Get:
                 self.points = points
         users = Database.execute_and_fetchall("SELECT user_id, points FROM users ORDER BY points DESC LIMIT %s", (limit,))
         if users:
-            return [User(user[0], user[1]) for user in users]
+            return [User(user[0], user[1]) for user in users if user[0] != "111111111111111111"]
         else:
             return []
         
@@ -289,6 +289,9 @@ class Get:
         collect = Database.execute_and_fetchone("SELECT used_collect FROM users WHERE user_id = %s", (id,))
         return collect[0]
 
+    def user_found_nests(id):
+        nests = Database.execute_and_fetchall("SELECT found_nests FROM users WHERE user_id = %s", (id,))
+        return nests[0][0]
     
     def talisman_check(id):
         talisman = Database.execute_and_fetchone("SELECT egg_talisman FROM users WHERE user_id = %s", (id,))
@@ -380,6 +383,15 @@ class Update:
 
     def stats_add_nests_searched():
         Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = 'nests_searched'")
+
+    def user_add_found_nests(id):
+        Database.execute_and_commit("UPDATE users SET found_nests = found_nests + 1 WHERE user_id = %s", (id,))
+
+    def stats_deleted_cooked():
+        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = 'deleted_cooked'")
+    
+    def stats_deleted_uncooked():
+        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = 'deleted_uncooked'")
             
 
 
@@ -482,4 +494,9 @@ class Translate:
         
 class Delete:
     def egg(id):
+        egg = Get.egg(id)
         Database.execute_and_commit("DELETE FROM eggs WHERE egg_id = %s", (id,))
+        if egg.type == "gekochtes Hühnerei":
+            Update.stats_deleted_cooked()
+        elif egg.type == "ungekochtes Hühnerei":
+            Update.stats_deleted_uncooked()

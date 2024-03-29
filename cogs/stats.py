@@ -39,6 +39,7 @@ class Stats(commands.Cog):
         throws = system.Get.own_throws(user.id)
         own_hits = [throw for throw in throws if throw.success == True] if throws else []
         times_collected = system.Get. user_collect_amount(user.id)
+        nests_found = system.Get.user_found_nests(user.id)
         points = system.Get.points(user.id)
         rabbit_foot_amount = system.Get.rabbit_foot_amount(user.id)
         used_rabbit_foot_amount = system.Get.used_rabbit_foot_amount(user.id)
@@ -58,7 +59,8 @@ abgeworfen worden: {hits[0]}\n\
 getroffen worden: {hits[1]}\n\
 jemanden abgeworfen: {len(throws)}\n\
 jemanden getroffen: {len(own_hits)}\n\
-/collect ausgeführt: {times_collected}", color=0xec6726)
+/collect ausgeführt: {times_collected}\n\
+Nester gefunden: {nests_found}", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
         await ctx.response.send_message(embed=embed)

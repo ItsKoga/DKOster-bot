@@ -35,7 +35,6 @@ def is_verified():
 
 def is_day():
     def day(ctx):
-        return True
         time = tm.localtime()
         if time.tm_hour < 6 or time.tm_hour > 23:
             return False
@@ -161,6 +160,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                 
                 if rewards.schokoei or rewards.gekochtesEi or rewards.ungekochtesEi:
                     system.Update.stats_add_nests_found()
+                    system.Update.user_add_found_nests(self.value[0])
 
                 log(f"{ctx.author.name} wurden die Belohnungen hinzugefügt!", "SUCCESS")
                 system.Get.points(self.value[0])
