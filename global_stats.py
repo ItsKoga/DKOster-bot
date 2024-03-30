@@ -14,7 +14,7 @@ for user in users:
 print(f"Punkte insgesamt: {amount_0}")
 
 users_with_talisman = [user for user in users if user[2] != 0]
-print(f"Users mit Talisman: {len(users_with_talisman)}")
+print(f"User mit Talisman: {len(users_with_talisman)}")
 
 current_rabbit_foots = [user for user in users if user[3] != 0]
 amount_1 = 0
@@ -43,29 +43,48 @@ for user in found_nests:
     amount_4 += user[9]
 print(f"Nester gefunden(nicht leer): {amount_4}")
 
+print("\n")
+
 print("Top 5 User, die am meisten /collect ausgeführt haben:")
 users.sort(key=lambda x: x[8], reverse=True)
 for i in range(5):
     print(f"{i + 1}. <@{users[i][0]}> : {users[i][8]}")
 
+class User:
+    def __init__(self, user_id, cakes):
+        self.user_id = user_id
+        self.cakes = cakes
+
+users_created_cakes = []
+for user in users:
+    cakes = system.Database.execute_and_fetchall(f"SELECT * FROM cakes WHERE user_id = '{user[0]}'")
+    users_created_cakes.append(User(user[0], cakes))
+
+print("**Top 5 User, die die meisten Kuchen erstellt haben:**")
+users_created_cakes.sort(key=lambda x: len(x.cakes), reverse=True)
+for i in range(5):
+    print(f"{i + 1}. <@{users_created_cakes[i].user_id}> : {len(users_created_cakes[i].cakes)} Kuchen")
+
 
 print("\n")
 
 eggs = system.Database.execute_and_fetchall("SELECT * FROM eggs")
+cakes = system.Database.execute_and_fetchall("SELECT * FROM cakes")
+print(f"Kuchen insgesamt: {len(cakes)}")
 
 chocolate_eggs = [egg for egg in eggs if egg[3] == "Schokoei"]
-amount_5 = len(chocolate_eggs)
-print(f"Schokoeier insgesamt: {amount_5}")
+amount_5 = len(chocolate_eggs) + len(cakes)*10
+print(f"Schokoeier insgesamt gefunden: {amount_5}")
 
 cooked_eggs = [egg for egg in eggs if egg[3] == "gekochtes Hühnerei"]
 deleted_cooked = system.Database.execute_and_fetchall("SELECT * FROM stats WHERE stat = 'deleted_cooked'")[0][1]
 amount_6 = len(cooked_eggs) + deleted_cooked
-print(f"Gekochte Eier insgesamt: {amount_6}")
+print(f"Gekochte Eier insgesamt gefunden: {amount_6}")
 
 uncooked_eggs = [egg for egg in eggs if egg[3] == "ungekochtes Hühnerei"]
 deleted_uncooked = system.Database.execute_and_fetchall("SELECT * FROM stats WHERE stat = 'deleted_uncooked'")[0][1]
 amount_7 = len(uncooked_eggs) + deleted_uncooked
-print(f"Ungekochte Eier insgesamt: {amount_7}")
+print(f"Ungekochte Eier insgesamt gefunden: {amount_7}")
 
 print("\n")
 
@@ -106,6 +125,9 @@ for i in range(5):
 print("\n")
 
 solo_fights = system.Database.execute_and_fetchall("SELECT * FROM egg_fights")
+print(f"Kämpfe insgesamt: {len(solo_fights)}")
+
+print("\n")
 
 class User:
     def __init__(self, user_id, fights, wins, losses, started, accepted):
@@ -149,6 +171,9 @@ for i in range(5):
 print("\n")
 
 throws = system.Database.execute_and_fetchall("SELECT * FROM egg_throws")
+print(f"Würfe insgesamt: {len(throws)}")
+
+print("\n")
 
 class User:
     def __init__(self, user_id, throws):

@@ -200,8 +200,8 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
             await ctx.response.send_message(ctx.author.mention, embed=embed, view=view)
             log("/collect : Embed wurde gesendet!", "SYSTEM")
         else:
-            log(f"/collect : {ctx.author.name} hat in der Vorwahl {location} ausgewählt!", "SYSTEM")
-            embed = discord.Embed(title="Eiersuche", description=f"**{location}.<:Eier_Nest:1221556705490636880>** (Deine Suche: "+(locations[location].type if locations[location].type != "empty" else "leer")+f"):\n{system.Translate.nest(locations[location])}", color=0xec6726)
+            log(f"/collect : {ctx.author.name} hat in der Vorwahl {location} ausgewählt!", "SYSTEM") 
+            embed = discord.Embed(title="Eiersuche", description=("Du hattest eine Hasenpfote, aus diesem Grund wurden alle Eier und Hasenpfoten verdoppelt.\n\n" if system.Get.rabbit_foot_amount(ctx.author.id) else "")+f"**{location}.<:Eier_Nest:1221556705490636880>** (Deine Suche: "+(locations[location].type if locations[location].type != "empty" else "leer")+f"):\n{system.Translate.nest(locations[location])}", color=0xec6726)
             log("/collect : Embed wurde erstellt!", "SYSTEM")
             for loc in locations:
                 if loc != location:
@@ -255,6 +255,8 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         check = system.Get.egg_check(ctx.author.id, "ungekochtes Hühnerei")
         if check == False:
             return await ctx.response.send_message("Du hast keine :egg:!", ephemeral=True)
+        if system.Get.type_eggs(user.id, "schokoei") == []:
+            return await ctx.response.send_message("Dieser User hat keine <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
         if system.Get.user(user.id).last_hit > tm.time()-300:
             return await ctx.response.send_message("Dieser User wurde in den letzten 5 Minuten bereits abgeworfen!", ephemeral=True)
         log(f"{ctx.author.name} hat ein Ei auf {user.name} geworfen!", "USER_ACTION")
@@ -562,7 +564,7 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                 await self.message.edit(embed=self.message.embeds[0])
 
 
-        embed = discord.Embed(title="Gruppenkampf", description=f"{ctx.author.mention} hat einen Gruppenkampf gestartet! Möchtest du beitreten? Der Kampf beginnt <t:{int(tm.time()+60)}:R>.\n\
+        embed = discord.Embed(title="Gruppenkampf", description=f"{ctx.author.mention} hat einen Gruppenkampf gestartet! Möchtest du beitreten? Der Kampf beginnt <t:{int(tm.time()+80)}:R>.\n\
 Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
         embed.add_field(name="Teilnehmer(1/4)", value=f"- <@{ctx.author.id}>", inline=False)
         embed.set_footer(text=f"Made by ItsKoga ❤")
@@ -599,12 +601,12 @@ Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
         profile = system.Get.user(ctx.author.id)
         if profile.egg_talisman == 0:
             return await ctx.response.send_message("Du hast noch keinen Eier Talisman!", ephemeral=True)
-        if richtung == "gekochtes Hühnerei":
+        if richtung == "Rohe Eier":
             system.Update.user_egg_talisman(ctx.author.id, 2)
-            await ctx.response.send_message("Dein Eier Talisman erhöht jetzt die Chance auf <:osterei:962802014226640996>!", ephemeral=True)
+            await ctx.response.send_message("Dein Eier Talisman erhöht jetzt die Chance auf :egg:!", ephemeral=True)
         else:
             system.Update.user_egg_talisman(ctx.author.id, 1)
-            await ctx.response.send_message("Dein Eier Talisman erhöht jetzt die Chance auf :egg:!", ephemeral=True)
+            await ctx.response.send_message("Dein Eier Talisman erhöht jetzt die Chance auf <:osterei:962802014226640996>!", ephemeral=True)
         log(f"{ctx.author.name} hat seinen Talisman geändert!", "USER_ACTION")
             
 

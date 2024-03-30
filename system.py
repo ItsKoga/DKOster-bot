@@ -97,8 +97,8 @@ class Get:
         
     def probabilities(id):
         talisman = Get.talisman_type(id)
-        cooked = 0.5 if talisman == 0 else 0.6 if talisman == 2 else 0.4
-        uncooked = round(0.7 - cooked, 1)
+        cooked = 0.577 if talisman == 0 else 0.677 if talisman == 1 else 0.477
+        uncooked = round(0.873 - cooked, 1)
         return (cooked, uncooked)
         
     def points(id):
@@ -373,7 +373,7 @@ class Update:
 
     def reset_last_fight(id):
         Database.execute_and_commit("UPDATE users SET last_fight = 0 WHERE user_id = %s", (id,))
-        Add.egg(id, "ungekochtes Hühnerei")
+        Add.egg(id, "gekochtes Hühnerei")
 
     def user_add_collect(id):
         Database.execute_and_commit("UPDATE users SET used_collect = used_collect + 1 WHERE user_id = %s", (id,))
@@ -427,8 +427,8 @@ class Gen:
                                                    schokoei=random.randint(5, 15) * (2 if rabbit_foot else 1),
                                                    gekochtesEi=0 if random.random() < probabilities[0] else (random.randint(2, 4) * (2 if rabbit_foot else 1)),
                                                    ungekochtesEi=0 if random.random() < probabilities[1] else (random.randint(2, 4) * (2 if rabbit_foot else 1)),
-                                                   egg_talisman=1 if Get.talisman_check(ctx.author.id) and random.random() <= 0.03 else 0,
-                                                   rabbit_foot_count=1 * (2 if rabbit_foot else 1) if random.random() <= 0.20 else 0)
+                                                   egg_talisman=1 if Get.talisman_check(ctx.author.id) and random.random() <= 0.27 else 0,
+                                                   rabbit_foot_count=1 * (2 if rabbit_foot else 1) if random.random() <= 0.395 else 0)
         
     def solo_fight_text(winner, loser, chocolate_egg_bet, participants):
         strig = random.choice(["Die beiden Eier scheinen einiges auszuhalten.",
