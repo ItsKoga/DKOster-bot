@@ -6,6 +6,12 @@ import random
 import mysql.connector
 from mysql.connector import Error
 
+def format_number(n, type="p"):
+    #"p" steht für positive Zahlen
+    if type == "p":
+        return f"{abs(n):,}".replace(",", "_").replace(".", ",").replace("_", ".")
+    else:
+        return f"{n:,}".replace(",", "_").replace(".", ",").replace("_", ".")
 class Database:
 
     def connect():
@@ -491,7 +497,7 @@ class Translate:
         string = ""
         top = Get.top(top)
         for i, user in enumerate(top):
-            string += f"{i+1}. <@{user.id}> - {user.points}\n"
+            string += f"{i+1}. <@{user.id}> - {format_number(user.points)}\n"
         
         return string.strip()
 
@@ -504,3 +510,4 @@ class Delete:
             Update.stats_deleted_cooked()
         elif egg.type == "ungekochtes Hühnerei":
             Update.stats_deleted_uncooked()
+

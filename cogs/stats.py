@@ -31,7 +31,7 @@ class Stats(commands.Cog):
         log(f"{ctx.author.name} hat die Stats von {user.name} angefordert!", "USER_ACTION")
 
         profile = system.Get.user(user.id)
-        chocolate_eggs = len(system.Get.type_eggs(user.id, "Schokoei"))
+        chocolate_eggs = system.format_number(len(system.Get.type_eggs(user.id, "Schokoei")))
         cakes = len(system.Get.cakes(user.id))
         cooked = len([egg for egg in system.Get.type_eggs(user.id, "gekochtes Hühnerei") if egg.is_rotten == False])
         uncooked = len([egg for egg in system.Get.type_eggs(user.id, "ungekochtes Hühnerei") if egg.is_rotten == False])
@@ -40,14 +40,14 @@ class Stats(commands.Cog):
         own_hits = [throw for throw in throws if throw.success == True] if throws else []
         times_collected = system.Get. user_collect_amount(user.id)
         nests_found = system.Get.user_found_nests(user.id)
-        points = system.Get.points(user.id)
+        points = system.format_number(system.Get.points(user.id))
         rabbit_foot_amount = system.Get.rabbit_foot_amount(user.id)
         used_rabbit_foot_amount = system.Get.used_rabbit_foot_amount(user.id)
 
         last_hit = f"<t:{profile.last_hit}:R>" if profile.last_hit != 0 else "Nie"
 
         embed = discord.Embed(title=f"Stats von {user.display_name}", 
-                              description= f"Punkte : {points}\n\
+                              description= f"Punkte : {points} #{system.Get.top_position(user.id)}\n\
 <:Schoko_Ei:1221556659030196284>: {chocolate_eggs}\n\
 :cake:: {cakes}\n\
 :egg:: {uncooked}\n\
@@ -72,11 +72,12 @@ Nester gefunden: {nests_found}", color=0xec6726)
     async def leaderboard(self, ctx):
         log(f"{ctx.author.name} hat die Leaderboard angefordert!", "USER_ACTION")
 
-        embed = discord.Embed(title="Leaderboard", description=system.Translate.leaderboard(10) + f"\n\n{system.Get.top_position(ctx.author.id)}. Du - {system.Get.points(ctx.author.id)}", color=0xec6726)
+        points = system.format_number(system.Get.points(ctx.author.id))
+
+        embed = discord.Embed(title="Leaderboard", description=system.Translate.leaderboard(10) + f"\n\n{system.Get.top_position(ctx.author.id)}. Du - {points}", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
 
         await ctx.response.send_message(embed=embed, ephemeral=True)
-
 
 
 
