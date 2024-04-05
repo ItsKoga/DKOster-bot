@@ -35,13 +35,22 @@ def is_verified():
         return False
     return commands.check(verified)
 
+#def is_day():
+#    def day(ctx):
+#        time = tm.localtime()
+#        if time.tm_hour < 6 or time.tm_hour > 23:
+#            return False
+#        return True
+#    return commands.check(day)
+
 def is_day():
     def day(ctx):
         time = tm.localtime()
-        if time.tm_hour < 6 or time.tm_hour > 23:
+        if time.tm_hour < 6 or time.tm_hour > 21:
             return False
         return True
     return commands.check(day)
+
 
 
 class Game(commands.Cog):
@@ -62,8 +71,12 @@ class Game(commands.Cog):
                 return await ctx.response.send_message(embed=embed, ephemeral=True)
 
         time = tm.localtime()
-        if time.tm_hour < 6 or time.tm_hour > 23:
-            embed = discord.Embed(title="Fehler", description="Der Osterhase versteckt zwischen 0:00 und 6:00 Uhr neue Eier, aus diesem Grund hat deine Oma dich ins Bett geschickt!", color=discord.Color.red())
+#        if time.tm_hour < 6 or time.tm_hour > 23:
+#            embed = discord.Embed(title="Fehler", description="Der Osterhase versteckt zwischen 0:00 und 6:00 Uhr neue Eier, aus diesem Grund hat deine Oma dich ins Bett geschickt!", color=discord.Color.red())
+#            embed.set_footer(text=f"Made by ItsKoga ❤")
+#            return await ctx.response.send_message(embed=embed, ephemeral=True)
+        if time.tm_hour < 6 or time.tm_hour > 21:
+            embed = discord.Embed(title="Fehler", description="Der osterhase geht nun bis zum nächsten Jahr schlafen!\nDas Event ist nun zu Ende!", color=discord.Color.red())
             embed.set_footer(text=f"Made by ItsKoga ❤")
             return await ctx.response.send_message(embed=embed, ephemeral=True)
         else:
@@ -255,10 +268,10 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         check = system.Get.egg_check(ctx.author.id, "ungekochtes Hühnerei")
         if check == False:
             return await ctx.response.send_message("Du hast keine :egg:!", ephemeral=True)
-        if system.Get.type_eggs(user.id, "schokoei") == []:
+        if system.Get.type_eggs(user.id, "Schokoei") == []:
             return await ctx.response.send_message("Dieser User hat keine <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
         if system.Get.user(user.id).last_hit > tm.time()-300:
-            return await ctx.response.send_message("Dieser User wurde in den letzten 5 Minuten bereits abgeworfen!", ephemeral=True)
+            return await ctx.response.send_message(f"Dieser User wurde in den letzten 5 Minuten bereits abgeworfen! Versuche es <t:{system.Get.user(user.id).last_hit+300}:R> erneut.", ephemeral=True)
         log(f"{ctx.author.name} hat ein Ei auf {user.name} geworfen!", "USER_ACTION")
         
         success = random.choice([0, 1])

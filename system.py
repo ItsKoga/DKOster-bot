@@ -128,7 +128,9 @@ class Get:
         eggs = Database.execute_and_fetchall("SELECT * FROM eggs WHERE owner_id = %s", (id,)) 
         time = tm.time()
         if eggs:
-            return [Egg(egg[0], egg[1], egg[2], egg[3], egg[4], time) for egg in eggs]
+            eggs = [Egg(egg[0], egg[1], egg[2], egg[3], egg[4], time) for egg in eggs]
+            eggs.sort(key=lambda x: x.id)
+            return eggs
         else:
             return []
         

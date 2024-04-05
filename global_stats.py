@@ -135,6 +135,7 @@ class User:
         self.fights = fights
         self.wins = wins
         self.losses = losses
+        self.percentage = len(wins) / len(fights) * 100 if len(fights) != 0 else 0
         self.started = started
         self.accepted = accepted
 
@@ -168,6 +169,14 @@ fights.sort(key=lambda x: len(x.accepted), reverse=True)
 for i in range(5):
     print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].accepted)} Anfragen angenommen")
 
+#remove users less than 25 fights
+fights = [fight for fight in fights if len(fight.fights) >= 30]
+
+print("**Top 5 User, die die höchste Gewinnrate haben(mindestens 30 Fights):**")
+fights.sort(key=lambda x: x.percentage, reverse=True)
+for i in range(5):
+    print(f"{i + 1}. <@{fights[i].user_id}> : {fights[i].percentage:.2f}%")
+
 print("\n")
 
 throws = system.Database.execute_and_fetchall("SELECT * FROM egg_throws")
@@ -182,6 +191,7 @@ class User:
         self.successful_throws = [throw for throw in throws if throw[1] == user_id and throw[3] == 1]
         self.hits = [throw for throw in throws if throw[2] == user_id and throw[3] == 1]
         self.hits_received = [throw for throw in throws if throw[2] == user_id]
+        self.percentage = len(self.successful_throws) / len(self.throws) * 100 if len(self.throws) != 0 else 0
 
 throws_list = []
 for user in users:
@@ -207,12 +217,103 @@ throws_list.sort(key=lambda x: len(x.hits), reverse=True)
 for i in range(5):
     print(f"{i + 1}. <@{throws_list[i].user_id}> : {len(throws_list[i].hits)}x getroffen worden")
 
+throws_list = [throw for throw in throws_list if len(throw.throws) >= 30]
+
+print("**Top 5 User, die die höchste Trefferquote haben(mindestens 30 Würfe):**")
+throws_list.sort(key=lambda x: x.percentage, reverse=True)
+for i in range(5):
+    print(f"{i + 1}. <@{throws_list[i].user_id}> : {throws_list[i].percentage:.2f}%")
+
 print("\n")
 
 for location in ["1", "2", "3", "4", "5"]:
     data = system.Database.execute_and_fetchall(f"SELECT * FROM stats WHERE stat = '{location}'")
     print(f"An der Location {location} wurde {data[0][1]} mal gesucht")
 
+print("\n")
+
+#group_fights = system.Database.execute_and_fetchall("SELECT * FROM group_fights")
+#print(f"Gruppenkämpfe insgesamt: {len(group_fights)}")
+
+#class User:
+#    def __init__(self, user_id, first_place, second_place, third_place):
+#        self.user_id = user_id
+#        self.first_place = first_place
+#        self.second_place = second_place
+#        self.third_place = third_place
+
+#fights = []
+#for user in users:
+#    first_place = [fight for fight in fights_list if fight[3] == user[0]]
+#    second_place = [fight for fight in fights_list if fight[4] == user[0]]
+#    third_place = [fight for fight in fights_list if fight[5] == user[0]]
+
+#    fights.append(User(user[0], first_place, second_place, third_place))
+
+#print("**Top 5 User, die die meisten Gruppenkämpfe gewonnen haben:**")
+#fights.sort(key=lambda x: len(x.first_place), reverse=True)
+#for i in range(5):
+#    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].first_place)} Siege")
+
+#print("**Top 5 User, die die meisten Gruppenkämpfe auf dem 2. Platz beendet haben:**")
+#fights.sort(key=lambda x: len(x.second_place), reverse=True)
+#for i in range(5):
+#    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].second_place)} 2. Plätze")
+
+#print("**Top 5 User, die die meisten Gruppenkämpfe auf dem 3. Platz beendet haben:**")
+#fights.sort(key=lambda x: len(x.third_place), reverse=True)
+#for i in range(5):
+#    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].third_place)} 3. Plätze")
+
+#print("\n")
+
+#amount_8 = 0
+#for fight in group_fights:
+#    amount_8 += fight[1] * fight[2]
+
+#print(f"Schokoeier insgesamt gewonnen: {amount_8}")
+
+#print("\n")
+
+#class Fight:
+#    def __init__(self, participants, bet):
+#        self.participants = participants
+#        self.bet = bet
+#        self.bet_amount = 1
+#        self.participants_amount = 1
+
+#fights_bet = []
+#fights_participants = []
+
+#for fight in group_fights:
+#    if fight[1] in [fight.participants for fight in fights_participants]:
+#        for f in fights_participants:
+#            if f.participants == fight[1]:
+#                f.participants_amount += 1
+#    else:
+#        fights_participants.append(Fight(fight[1], fight[2]))
+#
+#    if fight[2] in [fight.bet for fight in fights_bet]:
+#        for f in fights_bet:
+#            if f.bet == fight[2]:
+#                f.bet_amount += 1
+#    else:
+#        fights_bet.append(Fight(fight[1], fight[2]))
+
+
+
+
+#print("**Top 5 Gruppenkämpfe häufigsten Teilnehmerzahl:**")
+#fights_participants.sort(key=lambda x: x.participants_amount, reverse=True)
+#for i in range(5):
+#    print(f"{i + 1}. {fights_participants[i].participants} Teilnehmer {fights_participants[i].participants_amount}x")
+
+#print("**Top 5 Gruppenkämpfe häufigsten Einsatz:**")
+##fights_bet.sort(key=lambda x: x.bet_amount, reverse=True)
+#for i in range(5):
+#    print(f"{i + 1}. {fights_bet[i].bet} Kuchen {fights_bet[i].bet_amount}x")
+
+#print("\n")
 
 
 print(f"\nTime: {time.strftime('%M:%S', time.gmtime(time.time() - start))}")
