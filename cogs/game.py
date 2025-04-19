@@ -35,21 +35,34 @@ def is_verified():
         return False
     return commands.check(verified)
 
+
+# Normal (22:00 Uhr)
+def is_day():
+    def day(ctx):
+        time = tm.localtime()
+        if time.tm_hour < 6 or time.tm_hour > 23:
+            return False
+        return True
+    return commands.check(day)
+
+# Ende (20:00 Uhr)
 #def is_day():
 #    def day(ctx):
 #        time = tm.localtime()
-#        if time.tm_hour < 6 or time.tm_hour > 23:
+#        if time.tm_hour < 6 or time.tm_hour > 21:
 #            return False
 #        return True
 #    return commands.check(day)
 
-def is_day():
-    def day(ctx):
-        time = tm.localtime()
-        if time.tm_hour < 6 or time.tm_hour > 21:
-            return False
-        return True
-    return commands.check(day)
+# Start 6:00 Uhr Aktuell nach 15 Uhr
+#def is_day():
+#    def day(ctx):
+#        time = tm.localtime()
+#        print(time.tm_hour)
+#        if time.tm_hour < 6 or time.tm_hour > 15:
+#            return False
+#        return True
+#    return commands.check(day)
 
 
 
@@ -59,6 +72,7 @@ class Game(commands.Cog):
 
     @commands.Cog.listener()
     async def on_application_command_error(self, ctx, error):
+        log(f"Fehler bei {ctx.command.name}: {error}", "ERROR")
         if isinstance(error, commands.CommandOnCooldown):
             if ctx.command.name == "collect":
                 embed = discord.Embed(title="Eiersuche", description=f"Du kannst erst <t:{int(tm.time()+error.retry_after)}:R> wieder nach Eiern suchen!", color=discord.Color.red())
@@ -71,14 +85,23 @@ class Game(commands.Cog):
                 return await ctx.response.send_message(embed=embed, ephemeral=True)
 
         time = tm.localtime()
-#        if time.tm_hour < 6 or time.tm_hour > 23:
-#            embed = discord.Embed(title="Fehler", description="Der Osterhase versteckt zwischen 0:00 und 6:00 Uhr neue Eier, aus diesem Grund hat deine Oma dich ins Bett geschickt!", color=discord.Color.red())
-#            embed.set_footer(text=f"Made by ItsKoga ❤")
-#            return await ctx.response.send_message(embed=embed, ephemeral=True)
-        if time.tm_hour < 6 or time.tm_hour > 21:
-            embed = discord.Embed(title="Fehler", description="Der osterhase geht nun bis zum nächsten Jahr schlafen!\nDas Event ist nun zu Ende!", color=discord.Color.red())
+# Normal (22:00 Uhr)
+        if time.tm_hour < 6 or time.tm_hour > 23:
+            embed = discord.Embed(title="Fehler", description="Der Osterhase versteckt zwischen 0:00 und 6:00 Uhr neue Eier, aus diesem Grund hat deine Oma dich ins Bett geschickt!", color=discord.Color.red())
             embed.set_footer(text=f"Made by ItsKoga ❤")
             return await ctx.response.send_message(embed=embed, ephemeral=True)
+
+# Ende (20:00 Uhr)
+#        if time.tm_hour < 6 or time.tm_hour > 21:
+#            embed = discord.Embed(title="Fehler", description="Der osterhase geht nun bis zum nächsten Jahr schlafen!\nDas Event ist nun zu Ende!", color=discord.Color.red())
+#            embed.set_footer(text=f"Made by ItsKoga ❤")
+#            return await ctx.response.send_message(embed=embed, ephemeral=True)
+        
+# Start 6:00 Uhr Aktuell nach 15 Uhr
+#        if time.tm_hour < 6 or time.tm_hour > 15:
+#            embed = discord.Embed(title="Fehler", description="Der osterhase schläft noch!\nDas Event startet um 6:00 Uhr!", color=discord.Color.red())
+#            embed.set_footer(text=f"Made by ItsKoga ❤")
+#            return await ctx.response.send_message(embed=embed, ephemeral=True)
         else:
             embed = discord.Embed(title="Fehler", description="An dem Oster-event können nur verifizierte User teilnehmen! Du kannst dich in <#665566988319326275> mit /verify verifizieren!", color=discord.Color.red())
             embed.set_footer(text=f"Made by ItsKoga ❤")
@@ -89,7 +112,7 @@ class Game(commands.Cog):
         if ctx.command.name == "collect":
             await asyncio.sleep(120)
             embed = discord.Embed(title="Du kannst wieder /collect ausführen!", description="Es ist zwei Minuten her, seitdem du Punkte für das Oster-Event gesammelt hast.\n\
-Führe jetzt wieder /collect im Channel <#1222634664733446154> aus!\n\n\
+Führe jetzt wieder /collect im Channel <#1362812143992312000> aus!\n\n\
 Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping einfach mit dem /notify Befehl.", color=discord.Color.random())
             embed.set_footer(text=f"Made by ItsKoga ❤")
             if system.Get.notifications(ctx.author.id):
@@ -105,9 +128,11 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
     @commands.cooldown(1, 120, commands.BucketType.user)
     async def collect(self, ctx, location: Option(str, "Wo willst du suchen", choices=["1", "2", "3", "4", "5"], required=False)=None): # type: ignore
         log(f"{ctx.author.name} hat nach Eiern gesucht!", "USER_ACTION")
+        await ctx.defer()
         profile = system.Get.user(ctx.author.id)
         embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=0xec6726)
-        embed.set_image(url="https://i.imgur.com/AsSh0xY.png")
+        #embed.set_image(url="https://i.imgur.com/AsSh0xY.png") alt
+        embed.set_image(url="https://i.imgur.com/b7u3qAL.png")
         embed.set_footer(text=f"Made by ItsKoga ❤")
         log("/collect : Embed wurde erstellt!", "SYSTEM")
 
@@ -160,15 +185,13 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                 if system.Get.rabbit_foot_amount(self.value[0])!= 0:
                     system.Update.user_remove_one_rabbit_foot_count(self.value[0])
 
-                for i in range(rewards.schokoei):
-                    system.Add.egg(self.value[0], "Schokoei")
-                    log(f"/collect : {ctx.author.name} hat ein Schokoei erhalten!", "SUCCESS")
-                for i in range(rewards.gekochtesEi):
-                    system.Add.egg(self.value[0], "gekochtes Hühnerei")
-                    log(f"/collect : {ctx.author.name} hat ein gekochtes Hühnerei erhalten!", "SUCCESS")
-                for i in range(rewards.ungekochtesEi):
-                    system.Add.egg(self.value[0], "ungekochtes Hühnerei")
-                    log(f"/collect : {ctx.author.name} hat ein ungekochtes Hühnerei erhalten!", "SUCCESS")
+                system.Add.multiple_eggs(self.value[0], "Schokoei", rewards.schokoei)
+                log(f"/collect : {ctx.author.name} hat {rewards.schokoei} Schokoeier erhalten!", "SUCCESS")
+                system.Add.multiple_eggs(self.value[0], "gekochtes Hühnerei", rewards.gekochtesEi)
+                log(f"/collect : {ctx.author.name} hat {rewards.gekochtesEi} gekochte Hühnereier erhalten!", "SUCCESS")
+                system.Add.multiple_eggs(self.value[0], "ungekochtes Hühnerei", rewards.ungekochtesEi)
+                log(f"/collect : {ctx.author.name} hat {rewards.ungekochtesEi} ungekochte Hühnereier erhalten!", "SUCCESS")
+
                 if rewards.egg_talisman:
                     system.Update.user_egg_talisman(self.value[0], 1)
                     log(f"/collect : {ctx.author.name} hat einen Eier Talisman erhalten!", "SUCCESS")
@@ -210,8 +233,9 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
             view = View()
             log("/collect : View wurde erstellt!", "SYSTEM")
 
-            await ctx.response.send_message(ctx.author.mention, embed=embed, view=view)
+            await ctx.followup.send(ctx.author.mention, embed=embed, view=view)
             log("/collect : Embed wurde gesendet!", "SYSTEM")
+
         else:
             log(f"/collect : {ctx.author.name} hat in der Vorwahl {location} ausgewählt!", "SYSTEM") 
             embed = discord.Embed(title="Eiersuche", description=("Du hattest eine Hasenpfote, aus diesem Grund wurden alle Eier und Hasenpfoten verdoppelt.\n\n" if system.Get.rabbit_foot_amount(ctx.author.id) else "")+f"**{location}.<:Eier_Nest:1221556705490636880>** (Deine Suche: "+(locations[location].type if locations[location].type != "empty" else "leer")+f"):\n{system.Translate.nest(locations[location])}", color=0xec6726)
@@ -224,22 +248,22 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                     system.Update.stats_location(loc)
             log("/collect : Nester wurden eingetragen!", "SYSTEM")
             embed.set_footer(text=f"Made by ItsKoga ❤")
-            await ctx.response.send_message(ctx.author.mention, embed=embed)
+
+            await ctx.followup.send(ctx.author.mention, embed=embed)
             log("/collect : Embed wurde gesendet!", "SYSTEM")
+
             if system.Get.rabbit_foot_amount(ctx.author.id)!= 0:
                 system.Update.user_remove_one_rabbit_foot_count(ctx.author.id)
 
             log(f"{ctx.author.name} hat {rewards.schokoei} Schokoeier, {rewards.gekochtesEi} gekochte Hühnereier, {rewards.ungekochtesEi} ungekochte Hühnereier, {rewards.egg_talisman} Eier Talisman und {rewards.rabbit_foot_count} Hasenpfoten gefunden!")
 
-            for i in range(rewards.schokoei):
-                system.Add.egg(ctx.author.id, "Schokoei")
-                log(f"/collect : {ctx.author.name} hat ein Schokoei erhalten!", "SUCCESS")  
-            for i in range(rewards.gekochtesEi):
-                system.Add.egg(ctx.author.id, "gekochtes Hühnerei")
-                log(f"/collect : {ctx.author.name} hat ein gekochtes Hühnerei erhalten!", "SUCCESS")
-            for i in range(rewards.ungekochtesEi):
-                system.Add.egg(ctx.author.id, "ungekochtes Hühnerei")
-                log(f"/collect : {ctx.author.name} hat ein ungekochtes Hühnerei erhalten!", "SUCCESS")
+            system.Add.multiple_eggs(ctx.author.id, "Schokoei", rewards.schokoei)
+            log(f"/collect : {ctx.author.name} hat {rewards.schokoei} Schokoeier erhalten!", "SUCCESS")
+            system.Add.multiple_eggs(ctx.author.id, "gekochtes Hühnerei", rewards.gekochtesEi)
+            log(f"/collect : {ctx.author.name} hat {rewards.gekochtesEi} gekochte Hühnereier erhalten!", "SUCCESS")
+            system.Add.multiple_eggs(ctx.author.id, "ungekochtes Hühnerei", rewards.ungekochtesEi)
+            log(f"/collect : {ctx.author.name} hat {rewards.ungekochtesEi} ungekochte Hühnereier erhalten!", "SUCCESS")
+
             if rewards.egg_talisman:
                 system.Update.user_egg_talisman(ctx.author.id, 1)
                 log(f"/collect : {ctx.author.name} hat einen Eier Talisman erhalten!", "SUCCESS")
@@ -399,6 +423,9 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
     @is_day()
     async def group_fight(self, ctx, bet: int):
         global group_fight_running
+        if ctx.author.id == os.getenv("OWNER_ID") and bet == 4444:
+            group_fight_running = False
+            return await ctx.response.send_message("Gruppenkampf wurde zurückgesetzt!", ephemeral=True)
         if group_fight_running == True:
             log(f"{ctx.author.name} hat versucht einen Gruppenkampf zu starten, obwohl bereits einer läuft!", "ERROR")
             return await ctx.response.send_message("Es läuft bereits ein Gruppenkampf!", ephemeral=True)
@@ -440,10 +467,10 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                 global group_fight_running
 
                 if len(self.value) < 4:
+                    group_fight_running = False
                     for user in self.value:
                         system.Update.reset_last_fight(user)
                         log(f"/group_fight : {user} hat sein gekochtes Hühnerei zurück erhalten!", "SYSTEM")
-                        group_fight_running = False
                     return await self.message.reply("Nicht genug Spieler für den Gruppenkampf!")
                 
                 string = "\n".join([f"- <@{user}>" for user in self.value])
@@ -595,7 +622,7 @@ Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
         log(f"{ctx.author.name} hat /bake ausgeführt!", "USER_ACTION")
         check = system.Get.bake_check(ctx.author.id)
         if check == False:
-            amount_uncooked = len([egg for egg in system.Get.type_eggs(ctx.author.id, "ungekochtes Hühnerei") if egg.is_rotten == False])
+            amount_uncooked = len(system.Get.type_eggs_not_rotten(ctx.author.id, "ungekochtes Hühnerei"))
             amount_chocolate = len(system.Get.type_eggs(ctx.author.id, "Schokoei"))
             embed = discord.Embed(title="Kuchen backen", description="Du hast nicht alle Zutaten, daher kann dir deine Oma nicht helfen!", color=discord.Color.red())
             embed.add_field(name="Zutaten", value=f"3x :egg: (Du besitzt: {amount_uncooked})\n10x <:Schoko_Ei:1221556659030196284> (Du besitzt: {amount_chocolate})", inline=False)
@@ -621,6 +648,24 @@ Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
             system.Update.user_egg_talisman(ctx.author.id, 1)
             await ctx.response.send_message("Dein Eier Talisman erhöht jetzt die Chance auf <:osterei:962802014226640996>!", ephemeral=True)
         log(f"{ctx.author.name} hat seinen Talisman geändert!", "USER_ACTION")
+
+
+    @slash_command(name="lose", description="Tausche ein Gekochtes Ei gegen ein Los", guild_only=True)
+    @is_day()
+    async def lose(self, ctx, amount: int):
+        if amount < 1:
+            return await ctx.response.send_message("Du musst mindestens 1 <:osterei:962802014226640996> eintauschen!", ephemeral=True)
+        if amount > 25:
+            return await ctx.response.send_message("Du kannst maximal 25 <:osterei:962802014226640996> auf einmal eintauschen!", ephemeral=True)
+        if system.Get.egg_check(ctx.author.id, "gekochtes Hühnerei") == False:
+            return await ctx.response.send_message("Du hast kein <:osterei:962802014226640996>!", ephemeral=True)
+        if len(system.Get.type_eggs_not_rotten(ctx.author.id, "gekochtes Hühnerei")) < amount:
+            return await ctx.response.send_message("Du hast nicht genug <:osterei:962802014226640996>!", ephemeral=True)
+        log(f"{ctx.author.name} hat /lose ausgeführt!", "USER_ACTION")
+        system.Add.lose(ctx.author.id, amount)
+        embed = discord.Embed(title="Verloren", description=f"Du hast {amount}x <:osterei:962802014226640996> eingetauscht!", color=0xec6726)
+        embed.set_footer(text=f"Made by ItsKoga ❤")
+        await ctx.response.send_message(embed=embed, ephemeral=True)
             
 
         

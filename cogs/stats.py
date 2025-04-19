@@ -43,25 +43,27 @@ class Stats(commands.Cog):
         points = system.format_number(system.Get.points(user.id))
         rabbit_foot_amount = system.Get.rabbit_foot_amount(user.id)
         used_rabbit_foot_amount = system.Get.used_rabbit_foot_amount(user.id)
+        tickets = system.Get.tickets(user.id)
 
         last_hit = f"<t:{profile.last_hit}:R>" if profile.last_hit != 0 else "Nie"
 
-        embed = discord.Embed(title=f"Stats von {user.display_name}", 
-                              description= f"Punkte : {points} #{system.Get.top_position(user.id)}\n\
-<:Schoko_Ei:1221556659030196284>: {chocolate_eggs}\n\
-:cake:: {cakes}\n\
-:egg:: {uncooked}\n\
-<:osterei:962802014226640996> : {cooked}\n\
-Hasenpfoten: {rabbit_foot_amount}\n\
-Benutzte Hasenpfoten: {used_rabbit_foot_amount}\n\
-Zuletzt getroffen: {last_hit}\n\
-abgeworfen worden: {hits[0]}\n\
-getroffen worden: {hits[1]}\n\
-jemanden abgeworfen: {len(throws)}\n\
-jemanden getroffen: {len(own_hits)}\n\
-/collect ausgeführt: {times_collected}\n\
-Nester gefunden: {nests_found}", color=0xec6726)
-        embed.set_footer(text=f"Made by ItsKoga ❤")
+        embed = discord.Embed(title=f"Statistiken von {user.display_name}", color=0xec6726)
+        embed.add_field(name="Punkte", value=f"{points} (#{system.Get.top_position(user.id)})", inline=False)
+        embed.add_field(name="Eier", value=f"<:Schoko_Ei:1221556659030196284>: {chocolate_eggs}\n"
+                           f":egg:: {uncooked}\n"
+                           f"<:osterei:962802014226640996>: {cooked}", inline=True)
+        embed.add_field(name="Kuchen", value=f":cake: {cakes}", inline=True)
+        embed.add_field(name="Hasenpfoten", value=f":ticket: : {tickets}\n"
+                              f"Hasenpfoten: {rabbit_foot_amount}\n"
+                              f"Benutzte Hasenpfoten: {used_rabbit_foot_amount}\n", inline=True)
+        embed.add_field(name="Aktionen", value=f"Zuletzt getroffen: {last_hit}\n"
+                               f"Abgeworfen worden: {hits[0]}\n"
+                               f"Getroffen worden: {hits[1]}\n"
+                               f"Jemanden abgeworfen: {len(throws)}\n"
+                               f"Jemanden getroffen: {len(own_hits)}", inline=False)
+        embed.add_field(name="Sammlung", value=f"/collect ausgeführt: {times_collected}\n"
+                               f"Nester gefunden: {nests_found}", inline=False)
+        embed.set_footer(text="Made by ItsKoga ❤")
 
         await ctx.response.send_message(embed=embed, ephemeral=True)
 
@@ -74,8 +76,12 @@ Nester gefunden: {nests_found}", color=0xec6726)
 
         points = system.format_number(system.Get.points(ctx.author.id))
 
-        embed = discord.Embed(title="Leaderboard", description=system.Translate.leaderboard(10) + f"\n\n{system.Get.top_position(ctx.author.id)}. Du - {points}", color=0xec6726)
-        embed.set_footer(text=f"Made by ItsKoga ❤")
+        leaderboard_data = system.Translate.leaderboard(10)
+        user_position = system.Get.top_position(ctx.author.id)
+        embed = discord.Embed(title="🏆 Leaderboard", color=0xec6726)
+        embed.add_field(name="Top 10 Spieler", value=leaderboard_data, inline=False)
+        embed.add_field(name="Deine Position", value=f"{user_position}. Du - {points}", inline=False)
+        embed.set_footer(text="Made by ItsKoga ❤")
 
         await ctx.response.send_message(embed=embed, ephemeral=True)
 

@@ -93,6 +93,18 @@ class Info(commands.Cog):
                 button.disabled = True
                 await interaction.response.edit_message(embed=embed, view=self)
 
+            @discord.ui.button(emoji="🎫", style=discord.ButtonStyle.gray)
+            async def tickets(self, button: discord.ui.Button, interaction: discord.Interaction):
+                if interaction.user.id != self.value:
+                    return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
+                embed = discord.Embed(title=":ticket: Tickets", 
+                                      description="Mit 🎫 nimmst du an einer Special Verlosung am Ende des Events teil, bei der du auch noch einmal Preise abstauben kannst. Ein 🎫 ist ein Eintrag in das Giveaway. 🎫 erhältst du durch /tickets.",
+                                        color=0xec6726)
+                embed.set_footer(text=f"Made by ItsKoga ❤")
+                self.enable_all_items()
+                button.disabled = True
+                await interaction.response.edit_message(embed=embed, view=self)
+
             @discord.ui.button(label="Commands", style=discord.ButtonStyle.gray)
             async def commands(self, button: discord.ui.Button, interaction: discord.Interaction):
                 if interaction.user.id != self.value:
@@ -106,7 +118,8 @@ class Info(commands.Cog):
 - **/throw:** Wirf ein Ei ein :egg: auf einen anderen User, um diesem <:Schoko_Ei:1221556659030196284> zu klauen\n\
 - **/bake:** Lässt deine Oma einen :cake: backen\n\
 - **/talisman:** Wähle aus ob du mehr <:osterei:962802014226640996> oder :egg: finden möchtest\n\
-- **/notify:** Ändert die Benachrichtigungseinstellungen", color=0xec6726)  
+- **/notify:** Ändert die Benachrichtigungseinstellungen\n\
+- **/tickets:** Tausche <:osterei:962802014226640996> für :ticket:", color=0xec6726)  
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True

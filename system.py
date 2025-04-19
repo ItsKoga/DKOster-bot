@@ -149,6 +149,13 @@ class Get:
         else:
             return []
         
+    def type_eggs_not_rotten(id, type):
+        eggs = Get.type_eggs(id, type)
+        if eggs:
+            return [egg for egg in eggs if egg.is_rotten == False]
+        else:
+            return []
+        
     def egg(id):
         class Egg:
             def __init__(self, id, owner_id, creator_id, type, is_rotten, time):
@@ -316,6 +323,10 @@ class Get:
             return random.randint(7, 20)
         else:
             return random.randint(2, 7)
+        
+    def tickets(id):
+        tickets = Database.execute_and_fetchone("SELECT tickets FROM users WHERE user_id = %s", (id,))
+        return tickets[0]
 
 
 class Add:
@@ -325,6 +336,10 @@ class Add:
             return
         Database.execute_and_commit("INSERT INTO users (user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count) VALUES (%s, %s, %s, %s, %s)", (id, 0, 0, 0, 0))
         
+    def multiple_eggs(id, egg_type, amount):
+        for i in range(amount):
+            Add.egg(id, egg_type)
+
     def egg(id, type):
         Database.execute_and_commit("INSERT INTO eggs (owner_id, creator_id, type, is_rotten) VALUES (%s, %s, %s, %s)", (id, id, type, tm.time()))
         
@@ -349,6 +364,17 @@ class Add:
                 Delete.egg(egg.id)
                 i += 1
             if i == 3:
+                break
+
+    def lose(user_id, amount):
+        Database.execute_and_commit("UPDATE users SET tickets = tickets + %s WHERE user_id = %s", (amount, user_id))
+        eggs = Get.type_eggs(user_id, "gekochtes Hühnerei")
+        i = 0
+        for egg in eggs:
+            if egg.is_rotten == False:
+                Delete.egg(egg.id)
+                i += 1
+            if i == amount:
                 break
 
 class Update:
@@ -440,40 +466,79 @@ class Gen:
         
     def solo_fight_text(winner, loser, chocolate_egg_bet, participants):
         strig = random.choice(["Die beiden Eier scheinen einiges auszuhalten.",
-                              "Beide sind hochkonzentriert am Eier aufeinanderschlagen.",
-                              "Keines der Eier scheint so richtig nachzugeben.",
-                              "Eieiei, was passiert denn da?",
-                              "Ein Ei gleicht dem anderen - noch kann sich keiner durchsetzen.",
-                              f"Ist das etwa ein Sprung im Ei von <@{random.choice(participants)}>? Noch hat keiner gewonnen...",
-                              "Kein Ei-nfaches Duell, es will sich keiner so richtig durchsetzen.",
-                              "Möge das beste Ei gewinnen!",
-                              "Spannung liegt in der Luft, während sich unsere beiden Kontrahenten duellieren.",
-                              "Ei-nfach spannend!",
-                              "Das ist ein Kopf-an-Kopf-Rennen! Oder doch Ei an Ei?",
-                              "Es ist ein Hin und Her zwischen den beiden. Wer wird am Ende triumphieren?",
-                              "Wer hat das härtere Ei? Noch wirken beide sehr solide."])
+                      "Beide sind hochkonzentriert am Eier aufeinanderschlagen.",
+                      "Keines der Eier scheint so richtig nachzugeben.",
+                      "Eieiei, was passiert denn da?",
+                      "Ein Ei gleicht dem anderen - noch kann sich keiner durchsetzen.",
+                      f"Ist das etwa ein Sprung im Ei von <@{random.choice(participants)}>? Noch hat keiner gewonnen...",
+                      "Kein Ei-nfaches Duell, es will sich keiner so richtig durchsetzen.",
+                      "Möge das beste Ei gewinnen!",
+                      "Spannung liegt in der Luft, während sich unsere beiden Kontrahenten duellieren.",
+                      "Ei-nfach spannend!",
+                      "Das ist ein Kopf-an-Kopf-Rennen! Oder doch Ei an Ei?",
+                      "Es ist ein Hin und Her zwischen den beiden. Wer wird am Ende triumphieren?",
+                      "Wer hat das härtere Ei? Noch wirken beide sehr solide.",
+                      "Die Spannung steigt, während die Eier aufeinanderprallen.",
+                      "Es sieht aus, als ob keiner der beiden nachgeben möchte.",
+                      "Ein episches Duell der Eier, das seinesgleichen sucht.",
+                      "Die Zuschauer halten den Atem an, während die Eier aufeinander treffen.",
+                      "Ein wahres Spektakel! Beide Eier scheinen unzerstörbar.",
+                      "Die Kontrahenten schenken sich nichts, das Duell bleibt spannend.",
+                      "Ein Schlag nach dem anderen, doch noch ist kein Sieger in Sicht.",
+                      "Die Eier scheinen aus Stahl zu sein, keiner gibt nach.",
+                      "Ein Duell, das in die Geschichte eingehen wird. Wer wird gewinnen?",
+                      "Die Spannung ist kaum auszuhalten, beide Eier sind noch intakt.",
+                      "Ein wahres Kopf-an-Kopf-Rennen, die Entscheidung steht noch aus."])
         return strig
     
     def group_fight_text(participants):
         string = random.choice(["Die Eier scheinen einiges auszuhalten",
-                                "Keines der Eier scheint so richtig nachzugeben.",
-                                "Eieiei, was passiert denn da?",
-                                "Ein Ei gleicht dem anderen - noch kann sich keiner durchsetzen.",
-                                f"Ist das etwa ein Sprung im Ei von <@{random.choice(participants)}>? Noch hat keiner gewonnen...",
-                                "Kein Ei-nfaches Duell, es will sich keiner so richtig durchsetzen."    
-                                "Möge das beste Ei gewinnen!",
-                                "Ei-nfach spannend!",
-                                "Das ist ein Kopf-an-Kopf-Rennen! Oder doch Ei an Ei?"])
+                    "Keines der Eier scheint so richtig nachzugeben.",
+                    "Eieiei, was passiert denn da?",
+                    "Ein Ei gleicht dem anderen - noch kann sich keiner durchsetzen.",
+                    f"Ist das etwa ein Sprung im Ei von <@{random.choice(participants)}>? Noch hat keiner gewonnen...",
+                    "Kein Ei-nfaches Duell, es will sich keiner so richtig durchsetzen.",
+                    "Möge das beste Ei gewinnen!",
+                    "Ei-nfach spannend!",
+                    "Das ist ein Kopf-an-Kopf-Rennen! Oder doch Ei an Ei?",
+                    "Die Spannung steigt, während die Eier aufeinanderprallen.",
+                    "Ein episches Duell der Eier, das seinesgleichen sucht.",
+                    "Die Zuschauer halten den Atem an, während die Eier aufeinander treffen.",
+                    "Ein wahres Spektakel! Beide Eier scheinen unzerstörbar.",
+                    "Die Kontrahenten schenken sich nichts, das Duell bleibt spannend.",
+                    "Ein Schlag nach dem anderen, doch noch ist kein Sieger in Sicht.",
+                    "Die Eier scheinen aus Stahl zu sein, keiner gibt nach.",
+                    "Ein Duell, das in die Geschichte eingehen wird. Wer wird gewinnen?",
+                    "Die Spannung ist kaum auszuhalten, beide Eier sind noch intakt.",
+                    "Ein wahres Kopf-an-Kopf-Rennen, die Entscheidung steht noch aus.",
+                    "Wer hat das härtere Ei? Noch wirken beide sehr solide.",
+                    "Es sieht aus, als ob keiner der beiden nachgeben möchte.",
+                    "Ein Schlagabtausch der Extraklasse, die Eier prallen immer wieder aufeinander.",
+                    "Die Menge tobt, während die Eier aufeinanderkrachen.",
+                    "Ein Duell, das die Zuschauer in Atem hält."])
         
         return string
     
     def group_fight_loose_text(looser):
         string = random.choice([f"Das Ei von <@{looser}> gibt nach, das wars!",
-                                f"Knacks, das Ei ist kaputt, <@{looser}> ist raus!",
-                                f"Ziemlich hart, nich so fair - <@{looser}> ist ausgeschieden.",
-                                f"Plitsch, platsch, das Ei is matsch. Damit ist <@{looser}> raus.",
-                                f"Das waren wohl keine Eier aus Stahl. Sorry <@{looser}>, du bist drausen.",
-                                f"Eieiei, warum vorbei? Tut mir Leid <@{looser}>, aber dein Ei hat nachgegeben."])
+                    f"Knacks, das Ei ist kaputt, <@{looser}> ist raus!",
+                    f"Ziemlich hart, nich so fair - <@{looser}> ist ausgeschieden.",
+                    f"Plitsch, platsch, das Ei is matsch. Damit ist <@{looser}> raus.",
+                    f"Das waren wohl keine Eier aus Stahl. Sorry <@{looser}>, du bist drausen.",
+                    f"Eieiei, warum vorbei? Tut mir Leid <@{looser}>, aber dein Ei hat nachgegeben.",
+                    f"Ein harter Schlag, und das Ei von <@{looser}> zerbricht in tausend Stücke.",
+                    f"Das war's für <@{looser}>! Sein Ei hat den Druck nicht ausgehalten.",
+                    f"Ein lautes Knacken, und <@{looser}> ist aus dem Rennen.",
+                    f"Das Ei von <@{looser}> hat den Kürzeren gezogen. Aus und vorbei!",
+                    f"Ein trauriger Moment für <@{looser}> - sein Ei ist Geschichte.",
+                    f"Das Ei von <@{looser}> hat den Kampf nicht überlebt. Besseres Glück beim nächsten Mal!",
+                    f"Ein letzter Schlag, und das Ei von <@{looser}> zerbricht. Das war's!",
+                    f"Das Ei von <@{looser}> hat den Geist aufgegeben. Ein harter Verlust!",
+                    f"Ein lautes Plopp, und <@{looser}> ist raus aus dem Spiel.",
+                    f"Das Ei von <@{looser}> hat den Druck nicht überstanden. Schade!",
+                    f"Ein harter Treffer, und das Ei von <@{looser}> ist Geschichte.",
+                    f"Das war ein harter Schlag! <@{looser}> ist ausgeschieden.",
+                    f"Das Ei von <@{looser}> hat den Kampf verloren. Vielleicht nächstes Mal!"])
         return string
 
 class Translate:
