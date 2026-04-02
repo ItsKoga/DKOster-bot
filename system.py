@@ -1,440 +1,989 @@
-import os
+"""
+system.py (neu): Alte API-Form (Database/Get/Add/Update/Delete),
+aber:
+- SQLite (aiosqlite) statt MySQL
+- Cache + dirty flush alle 5 Minuten
 
-import time as tm
+So rufst du es später in Cogs auf:
+    u = await system.Get.user(ctx.author.id)
+    eggs = await system.Get.eggs(ctx.author.id)
+    await system.Add.egg(ctx.author.id, "Schokoei")
+"""
+
+from __future__ import annotations
+
+import asyncio
 import random
+import time as tm
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Set, Tuple
 
-import mysql.connector
-from mysql.connector import Error
+import aiosqlite
+import discord
+from discord.ext import tasks
 
+import log_helper
+
+
+# ----------------------------
+# Helpers (wie früher)
+# ----------------------------
 def format_number(n, type="p"):
-    #"p" steht für positive Zahlen
+    # "p" steht für positive Zahlen
     if type == "p":
         return f"{abs(n):,}".replace(",", "_").replace(".", ",").replace("_", ".")
     else:
         return f"{n:,}".replace(",", "_").replace(".", ",").replace("_", ".")
-class Database:
 
-    def connect():
-        class Connection:
-            def __init__(self):
-                self.connection = None
-                self.cursor = None
-                self.connected = False
-                self.enter()
 
-            def enter(self):
-                try:
-                    self.connection = mysql.connector.connect(
-                        host=os.getenv("DB_HOST"),
-                        user=os.getenv("DB_USER"),
-                        passwd=os.getenv("DB_PASSWORD"),
-                        database=os.getenv("DB_NAME")
+def normalize_egg_type(egg_type: str) -> str:
+    """Maps legacy egg names to the canonical values used by the cache and DB."""
+    mapping = {
+        "Schokoei": "Schokoei",
+        "cooked": "cooked",
+        "gekochtes Hühnerei": "cooked",
+        "ungekochtes Hühnerei": "uncooked",
+        "uncooked": "uncooked",
+    }
+    return mapping.get(egg_type, egg_type)
+
+
+# ----------------------------
+# Cache-Modelle
+# ----------------------------
+@dataclass
+class UserRow:
+    user_id: str
+    last_hit: int = 0
+    egg_talisman: int = 0
+    rabbit_foot_count: int = 0
+    used_rabbit_foot_count: int = 0
+    notifications: bool = True
+    points: int = 0
+    cakes: int = 0
+    chocolate_eggs: int = 0
+    last_fight: int = 0
+    used_collect: int = 0
+    found_nests: int = 0
+    tickets: int = 0
+    eggs_throwen: int = 0
+    eggs_hit: int = 0
+    own_eggs_hit: int = 0
+    eggs_throwen_at: int = 0
+
+
+
+@dataclass
+class EggRow:
+    egg_id: int
+    owner_id: str
+    creator_id: str
+    type: str
+    # Wir speichern in DB eine Zahl (timestamp), bei dir war es "is_rotten" aber eigentlich "created/rotten_at"
+    rotten_ts: int
+
+
+# Diese Egg-Klasse entspricht dem alten Verhalten (property is_rotten wird "live" berechnet)
+class EggView:
+    def __init__(self, row: EggRow, now: float):
+        self.id = row.egg_id
+        self.owner_id = row.owner_id
+        self.creator_id = row.creator_id
+        self.type = row.type
+
+        # altes Verhalten: egg ist rotten wenn timestamp alt genug ist (abhängig vom Typ)
+        # row.rotten_ts ist bei dir "tm.time()" beim Insert
+        self.is_rotten = (
+            (row.rotten_ts <= now - 3600 and row.type == "uncooked")
+            or (row.rotten_ts <= now - 86400 and row.type == "cooked")
+        )
+
+
+# ----------------------------
+# Der Handler (Service)
+# ----------------------------
+class SQLiteCacheDB:
+    """
+    Dieser Handler ist das Herzstück:
+    - DB Verbindung (aiosqlite)
+    - Cache (users, eggs, stats)
+    - Dirty Tracking + Flush loop
+    """
+
+    def __init__(self, bot: discord.Client, db_path: str = "data.db"):
+        self.bot = bot
+        self.db_path = db_path
+
+        self.log = log_helper.create("SQLiteCacheDB")
+
+        self.db: Optional[aiosqlite.Connection] = None
+        self._lock = asyncio.Lock()
+        self._ready = asyncio.Event()
+
+        # ----------------
+        # Cache
+        # ----------------
+        self.users: Dict[str, UserRow] = {}
+
+        # eggs: nach egg_id, plus index nach owner_id für schnellen Zugriff
+        self.eggs: Dict[int, EggRow] = {}
+        self.eggs_by_owner: Dict[str, Set[int]] = {}
+
+        # stats: key -> value
+        self.stats: Dict[str, int] = {}
+
+        # ----------------
+        # Dirty tracking
+        # ----------------
+        self.dirty_users: Set[str] = set()
+
+        # Für eggs unterscheiden wir:
+        # - neue eggs (haben temporäre negative egg_id, müssen inserted werden)
+        # - deleted eggs (nur IDs)
+        # - geänderte eggs (z.B. owner_id) - diese werden bei Flush mit UPDATE persistiert
+        self.new_eggs: List[Tuple[int, str, str, str, int]] = []  # (temp_egg_id, owner_id, creator_id, type, rotten_ts)
+        self.deleted_eggs: Set[int] = set()
+        self.dirty_eggs: Set[int] = set()  # Eggs mit geänderten Feldern (z.B. owner)
+        self._next_temp_egg_id: int = -1
+
+        # stats: wenn wir in Cache inkrementieren, merken wir welche Keys geändert wurden
+        self.dirty_stats: Set[str] = set()
+
+    async def start(self):
+        """
+        Startet DB, Schema, lädt Cache, startet Flush-Loop.
+        Wird in main.py in setup_hook aufgerufen.
+        """
+        self.db = await aiosqlite.connect(self.db_path)
+        await self.db.execute("PRAGMA foreign_keys = ON;")
+
+        await self._init_schema()
+        await self._load_cache()
+
+        self.flush_loop.start()
+        self._ready.set()
+
+        self.log("SQLiteCacheDB ist bereit!", "SUCCESS")
+
+    async def close(self):
+        """
+        Stoppt flush_loop, schreibt letzte Änderungen, schließt DB.
+        """
+        if self.flush_loop.is_running():
+            self.flush_loop.cancel()
+
+        await self.flush_dirty()
+
+        if self.db:
+            await self.db.close()
+            self.db = None
+
+    async def wait_ready(self):
+        await self._ready.wait()
+
+    async def _init_schema(self):
+        """
+        SQLite-kompatibles Schema + Seed Stats.
+        """
+        assert self.db is not None
+
+        await self.db.executescript("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
+            last_hit INTEGER DEFAULT 0,
+            egg_talisman INTEGER DEFAULT 0,
+            rabbit_foot_count INTEGER DEFAULT 0,
+            used_rabbit_foot_count INTEGER DEFAULT 0,
+            notifications INTEGER DEFAULT 1,
+            points INTEGER DEFAULT 0,
+            cakes INTEGER DEFAULT 0,
+            chocolate_eggs INTEGER DEFAULT 0,
+            last_fight INTEGER DEFAULT 0,
+            used_collect INTEGER DEFAULT 0,
+            found_nests INTEGER DEFAULT 0,
+            tickets INTEGER DEFAULT 0,
+            eggs_throwen INTEGER DEFAULT 0,
+            eggs_hit INTEGER DEFAULT 0,
+            own_eggs_hit INTEGER DEFAULT 0,
+            eggs_throwen_at INTEGER DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS eggs (
+            egg_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            owner_id TEXT,
+            creator_id TEXT,
+            type TEXT CHECK(type IN ('cooked', 'uncooked')),
+            rotten_ts INTEGER,
+            FOREIGN KEY (owner_id) REFERENCES users(user_id),
+            FOREIGN KEY (creator_id) REFERENCES users(user_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS egg_fights (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            challenger_id TEXT,
+            defender_id TEXT,
+            chocolate_egg_bet INTEGER,
+            winner_id TEXT,
+            FOREIGN KEY (challenger_id) REFERENCES users(user_id),
+            FOREIGN KEY (defender_id) REFERENCES users(user_id),
+            FOREIGN KEY (winner_id) REFERENCES users(user_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS group_fights (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            participants INTEGER,
+            chocolate_egg_bet INTEGER,
+            first_place_id TEXT,
+            second_place_id TEXT,
+            third_place_id TEXT,
+            FOREIGN KEY (first_place_id) REFERENCES users(user_id),
+            FOREIGN KEY (second_place_id) REFERENCES users(user_id),
+            FOREIGN KEY (third_place_id) REFERENCES users(user_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS stats (
+            stat TEXT PRIMARY KEY,
+            value INTEGER DEFAULT 0
+        );
+
+        INSERT INTO stats(stat, value) VALUES
+            ('nests_found', 0),
+            ('nests_searched', 0),
+            ('deleted_cooked', 0),
+            ('deleted_uncooked', 0),
+            ('1', 0), ('2', 0), ('3', 0), ('4', 0), ('5', 0)
+        ON CONFLICT(stat) DO UPDATE SET value = value;
+        """)
+
+        await self.db.commit()
+
+    async def _load_cache(self):
+        """
+        Lädt users, eggs, stats komplett in den Cache.
+        (Wenn das zu groß wird: später auf lazy load umstellen.)
+        """
+        assert self.db is not None
+
+        # ---- users
+        self.users.clear()
+        async with self.db.execute("""
+            SELECT user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count,
+                   notifications, points, cakes, chocolate_eggs, last_fight, used_collect, found_nests, tickets, eggs_throwen, eggs_hit, own_eggs_hit, eggs_throwen_at
+            FROM users
+        """) as cur:
+            rows = await cur.fetchall()
+
+        for r in rows:
+            self.users[r[0]] = UserRow(
+                user_id=r[0],
+                last_hit=r[1],
+                egg_talisman=r[2],
+                rabbit_foot_count=r[3],
+                used_rabbit_foot_count=r[4],
+                notifications=bool(r[5]),
+                points=r[6],
+                cakes=r[7],
+                chocolate_eggs=r[8],
+                last_fight=r[9],
+                used_collect=r[10],
+                found_nests=r[11],
+                tickets=r[12],
+                eggs_throwen=r[13],
+                eggs_hit=r[14],
+                own_eggs_hit=r[15]
+            )
+
+        # ---- eggs + index
+        self.eggs.clear()
+        self.eggs_by_owner.clear()
+        async with self.db.execute("SELECT egg_id, owner_id, creator_id, type, rotten_ts FROM eggs") as cur:
+            egg_rows = await cur.fetchall()
+
+        for e in egg_rows:
+            row = EggRow(egg_id=e[0], owner_id=e[1], creator_id=e[2], type=normalize_egg_type(e[3]), rotten_ts=e[4])
+            self.eggs[row.egg_id] = row
+            self.eggs_by_owner.setdefault(row.owner_id, set()).add(row.egg_id)
+
+        # ---- stats
+        self.stats.clear()
+        async with self.db.execute("SELECT stat, value FROM stats") as cur:
+            stat_rows = await cur.fetchall()
+        for s in stat_rows:
+            self.stats[s[0]] = int(s[1])
+
+    # -------------------------
+    # Flush: dirty -> SQLite
+    # -------------------------
+    async def flush_dirty(self):
+        """
+        Schreibt:
+        - dirty users per Upsert
+        - new eggs Inserts
+        - deleted eggs Deletes
+        - dirty eggs Updates (z.B. owner_id Änderungen)
+        - dirty stats Upserts
+        Alles in 1 Transaktion (BEGIN/COMMIT).
+        """
+        await self.wait_ready()
+        assert self.db is not None
+
+        # Snapshot unter Lock ziehen, damit wir schnell wieder frei sind
+        async with self._lock:
+            dirty_user_ids = list(self.dirty_users)
+            self.dirty_users.clear()
+            users_payload = [self.users[uid] for uid in dirty_user_ids if uid in self.users]
+
+            new_eggs_payload = list(self.new_eggs)
+            self.new_eggs.clear()
+
+            deleted_eggs_payload = list(self.deleted_eggs)
+            self.deleted_eggs.clear()
+
+            dirty_eggs_ids = list(self.dirty_eggs)
+            self.dirty_eggs.clear()
+            dirty_eggs_payload = [self.eggs[eid] for eid in dirty_eggs_ids if eid in self.eggs]
+
+            dirty_stats_keys = list(self.dirty_stats)
+            self.dirty_stats.clear()
+            stats_payload = [(k, self.stats.get(k, 0)) for k in dirty_stats_keys]
+
+        if not users_payload and not new_eggs_payload and not deleted_eggs_payload and not dirty_eggs_payload and not stats_payload:
+            return  # nix zu tun
+
+        await self.db.execute("BEGIN;")
+        try:
+            # ---- users upsert
+            if users_payload:
+                await self.db.executemany("""
+                    INSERT INTO users(
+                        user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count,
+                        notifications, points, cakes, chocolate_eggs, last_fight, used_collect, found_nests,
+                        tickets, eggs_throwen, eggs_hit, own_eggs_hit, eggs_throwen_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        last_hit=excluded.last_hit,
+                        egg_talisman=excluded.egg_talisman,
+                        rabbit_foot_count=excluded.rabbit_foot_count,
+                        used_rabbit_foot_count=excluded.used_rabbit_foot_count,
+                        notifications=excluded.notifications,
+                        points=excluded.points,
+                        cakes=excluded.cakes,
+                        chocolate_eggs=excluded.chocolate_eggs,
+                        last_fight=excluded.last_fight,
+                        used_collect=excluded.used_collect,
+                        found_nests=excluded.found_nests,
+                        tickets=excluded.tickets,
+                        eggs_throwen=excluded.eggs_throwen,
+                        eggs_hit=excluded.eggs_hit,
+                        own_eggs_hit=excluded.own_eggs_hit,
+                        eggs_throwen_at=excluded.eggs_throwen_at;
+                        
+                """, [
+                    (
+                        u.user_id,
+                        u.last_hit,
+                        u.egg_talisman,
+                        u.rabbit_foot_count,
+                        u.used_rabbit_foot_count,
+                        1 if u.notifications else 0,
+                        u.points,
+                        u.cakes,
+                        u.chocolate_eggs,
+                        u.last_fight,
+                        u.used_collect,
+                        u.found_nests,
+                        u.tickets,
+                        u.eggs_throwen,
+                        u.eggs_hit,
+                        u.own_eggs_hit,
+                        u.eggs_throwen_at
                     )
-                    self.cursor = self.connection.cursor()
-                    self.connected = True
-                    return self
-                except Error as e:
-                    print(f"Error while connecting to the database: {e}")
-                    return self
+                    for u in users_payload
+                ])
 
-            def close(self):
-                if self.connected:
-                    self.connection.commit()
-                    self.cursor.close()
-                    self.connection.close()
-                    self.connected = False
+            # ---- eggs inserts (AUTOINCREMENT ids)
+            if new_eggs_payload:
+                # Wir inserten einzeln, damit wir lastrowid bekommen (und den Cache korrekt halten)
+                for (temp_egg_id, owner_id, creator_id, egg_type, rotten_ts) in new_eggs_payload:
+                    egg_type = normalize_egg_type(egg_type)
+                    cur = await self.db.execute(
+                        "INSERT INTO eggs(owner_id, creator_id, type, rotten_ts) VALUES (?, ?, ?, ?)",
+                        (owner_id, creator_id, egg_type, rotten_ts),
+                    )
+                    egg_id = cur.lastrowid
 
-        return Connection()
-    
-    def execute_and_fetchall(query, values=None):
-        connection = Database.connect()
-        if connection.connected:
-            if values:
-                connection.cursor.execute(query, values)
-            else:
-                connection.cursor.execute(query)
-            data = connection.cursor.fetchall()
-        else:
-            data = None
-        connection.close()
-        return data
+                    # Temporären Cache-Eintrag durch persistierten Eintrag ersetzen.
+                    async with self._lock:
+                        temp_row = self.eggs.pop(int(temp_egg_id), None)
+                        if temp_row:
+                            self.eggs_by_owner.get(temp_row.owner_id, set()).discard(int(temp_egg_id))
+
+                        row = EggRow(
+                            egg_id=int(egg_id),
+                            owner_id=owner_id,
+                            creator_id=creator_id,
+                            type=egg_type,
+                            rotten_ts=rotten_ts,
+                        )
+                        self.eggs[row.egg_id] = row
+                        self.eggs_by_owner.setdefault(owner_id, set()).add(row.egg_id)
+
+            # ---- eggs updates (z.B. owner_id Änderungen)
+            if dirty_eggs_payload:
+                await self.db.executemany(
+                    "UPDATE eggs SET owner_id = ?, creator_id = ?, type = ?, rotten_ts = ? WHERE egg_id = ?",
+                    [(e.owner_id, e.creator_id, e.type, e.rotten_ts, e.egg_id) for e in dirty_eggs_payload]
+                )
+
+            # ---- eggs deletes
+            if deleted_eggs_payload:
+                await self.db.executemany("DELETE FROM eggs WHERE egg_id = ?", [(eid,) for eid in deleted_eggs_payload])
+
+            # ---- stats upsert
+            if stats_payload:
+                await self.db.executemany("""
+                    INSERT INTO stats(stat, value) VALUES (?, ?)
+                    ON CONFLICT(stat) DO UPDATE SET value=excluded.value;
+                """, stats_payload)
+
+            await self.db.commit()
+
+        except Exception:
+            await self.db.rollback()
+            raise
+
+        self.log("Flush complete", "SYSTEM")    
+        #self.log(f"Flush complete: {len(users_payload)} users, {len(new_eggs_payload)} new eggs, {len(dirty_eggs_payload)} updated eggs, {len(deleted_eggs_payload)} deleted eggs, {len(stats_payload)} stats.", "DEBUG")
+
+
+    @tasks.loop(minutes=1)
+    async def flush_loop(self):
+        """
+        Hintergrund-Loop: speichert alle 5 Minuten.
+        Falls ein Fehler passiert, fangen wir ihn, damit der Loop nicht dauerhaft stirbt.
+        """
+        try:
+            await self.flush_dirty()
+        except Exception as e:
+            print("DB Flush Fehler:", e)
+
+    @flush_loop.before_loop
+    async def before_flush(self):
+        # wartet, bis Bot ready (Login abgeschlossen) ist
+        await self.bot.wait_until_ready()
+
+    # -------------------------
+    # User-Operationen (Cache)
+    # -------------------------
+    async def get_or_create_user(self, user_id: int) -> UserRow:
+        await self.wait_ready()
+        uid = str(user_id)
+
+        async with self._lock:
+            u = self.users.get(uid)
+            if u:
+                return u
+
+            # neu im Cache anlegen (wird später per Upsert gespeichert)
+            u = UserRow(user_id=uid)
+            self.users[uid] = u
+            self.dirty_users.add(uid)
+            return u
+
+    # -------------------------
+    # Egg-Operationen (Cache)
+    # -------------------------
+    async def eggs_of_owner(self, owner_id: int) -> List[EggView]:
+        await self.wait_ready()
+        oid = str(owner_id)
+        now = tm.time()
+
+        async with self._lock:
+            ids = list(self.eggs_by_owner.get(oid, set()))
+            rows = [self.eggs[eid] for eid in ids if eid in self.eggs]
+
+        # "View" bauen (rotten berechnen)
+        eggs = [EggView(r, now) for r in rows]
+        eggs.sort(key=lambda x: x.id)
+        return eggs
+
+    async def eggs_of_owner_by_type(self, owner_id: int, egg_type: str) -> List[EggView]:
+        eggs = await self.eggs_of_owner(owner_id)
+        return [e for e in eggs if e.type == egg_type]
+
+    async def egg_by_id(self, egg_id: int) -> Optional[EggView]:
+        await self.wait_ready()
+        now = tm.time()
+        async with self._lock:
+            row = self.eggs.get(int(egg_id))
+        return EggView(row, now) if row else None
+
+    async def queue_new_egg(self, owner_id: int, creator_id: int, egg_type: str):
+        """
+        Legt ein neues Egg an, aber schreibt es nicht sofort in DB:
+        - wir queue'n es in self.new_eggs
+        - beim Flush wird es inserted und dann in Cache übernommen (mit egg_id)
+        """
+        await self.wait_ready()
+
+        await self.get_or_create_user(owner_id)
+        if creator_id != owner_id:
+            await self.get_or_create_user(creator_id)
+
+        oid = str(owner_id)
+        cid = str(creator_id)
+        ts = int(tm.time())
+        egg_type = normalize_egg_type(egg_type)
+
+        async with self._lock:
+            temp_id = self._next_temp_egg_id
+            self._next_temp_egg_id -= 1
+
+            row = EggRow(
+                egg_id=temp_id,
+                owner_id=oid,
+                creator_id=cid,
+                type=egg_type,
+                rotten_ts=ts,
+            )
+            self.eggs[row.egg_id] = row
+            self.eggs_by_owner.setdefault(oid, set()).add(row.egg_id)
+            self.new_eggs.append((temp_id, oid, cid, egg_type, ts))
+
+    async def set_egg_owner(self, egg_id: int, new_owner_id: int):
+        """
+        Ändert owner im Cache sofort und markiert das Egg als dirty für den nächsten Flush.
+        Die DB wird asynchron beim nächsten Flush aktualisiert.
+        """
+        await self.wait_ready()
+        new_oid = str(new_owner_id)
         
+        async with self._lock:
+            row = self.eggs.get(int(egg_id))
+            if not row:
+                return
             
-    def execute_and_commit(query, values=None):
-        connection = Database.connect()
-        if connection.connected:
-            if values:
-                connection.cursor.execute(query, values)
+            old_owner = row.owner_id
+            row.owner_id = new_oid
+
+            # index anpassen
+            if old_owner in self.eggs_by_owner:
+                self.eggs_by_owner[old_owner].discard(row.egg_id)
+            self.eggs_by_owner.setdefault(new_oid, set()).add(row.egg_id)
+            
+            # Egg als dirty markieren für Flush
+            if row.egg_id > 0:  # nur wenn bereits in DB vorhanden (nicht temp)
+                self.dirty_eggs.add(row.egg_id)
+
+    async def delete_egg(self, egg_id: int):
+        """
+        Entfernt Egg aus Cache und queue't Delete für nächsten Flush.
+        """
+        await self.wait_ready()
+        eid = int(egg_id)
+
+        async with self._lock:
+            row = self.eggs.pop(eid, None)
+            if row:
+                self.eggs_by_owner.get(row.owner_id, set()).discard(eid)
+
+            if eid < 0:
+                # Noch nicht persistiert: nur aus Insert-Queue entfernen.
+                self.new_eggs = [entry for entry in self.new_eggs if int(entry[0]) != eid]
             else:
-                connection.cursor.execute(query)
-            connection.connection.commit()
-        connection.close()
-            
-    def execute_and_fetchone(query, values=None):
-        connection = Database.connect()
-        if connection.connected:
-            if values:
-                connection.cursor.execute(query, values)
-            else:
-                connection.cursor.execute(query)
-            data = connection.cursor.fetchone()
-        else:
-            data = None
-        connection.close()
-        return data
-            
+                # Bereits in DB vorhanden: Delete für nächsten Flush vormerken.
+                self.deleted_eggs.add(eid)
+
+    # -------------------------
+    # Stats (Cache)
+    # -------------------------
+    async def stats_inc(self, key: str, amount: int = 1):
+        await self.wait_ready()
+        async with self._lock:
+            self.stats[key] = int(self.stats.get(key, 0)) + amount
+            self.dirty_stats.add(key)
+
+
+# ------------------------------------------------------
+# "Alte" Klassenstruktur (Facade) um den Handler herum
+# ------------------------------------------------------
+class Database:
+    """
+    Hier gibt es nicht mehr "connect pro query", sondern 1 Handler.
+    Du initialisierst system.Database.handler in main.py.
+    """
+    handler: Optional[SQLiteCacheDB] = None
+
+    @staticmethod
+    def set_handler(handler: SQLiteCacheDB):
+        Database.handler = handler
+
 
 class Get:
-    def user(id):
-        class User:
-            def __init__(self, id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count):
-                self.id = id
-                self.last_hit = last_hit
-                self.egg_talisman = egg_talisman
-                self.rabbit_foot_count = rabbit_foot_count
-                self.used_rabbit_foot_count = used_rabbit_foot_count
+    @staticmethod
+    async def user(id):
+        assert Database.handler is not None
+        return await Database.handler.get_or_create_user(id)
+    
+    @staticmethod
+    async def probailities(id):
+        talisman = await Get.talisman_type(id)
 
-        user = Database.execute_and_fetchone("SELECT * FROM users WHERE user_id = %s", (id,))
-        if user:
-            return User(user[0], user[1], user[2], user[3], user[4])
-        else:
-            Add.user(id)
-            return User(id, 0, 0, 0, 0)
-        
-    def probabilities(id):
-        talisman = Get.talisman_type(id)
         cooked = 0.577 if talisman == 0 else 0.677 if talisman == 1 else 0.477
-        uncooked = round(0.873 - cooked, 1)
+        uncooked = round(0.873 - cooked, 3)
+
         return (cooked, uncooked)
-        
-    def points(id):
-        chocolate_eggs = len(Get.type_eggs(id, "Schokoei"))
+    
+    @staticmethod
+    async def points(id):
+        chocolate_eggs = await Get.user(id)
+        chocolate_eggs = chocolate_eggs.chocolate_eggs
 
-        cakes = Get.cakes(id)
-        points = chocolate_eggs + len(cakes) * 10
+        user = await Get.user(id)        
+        cakes = user.cakes
+        points = chocolate_eggs + cakes * 10
 
-        Database.execute_and_commit("UPDATE users SET points = %s WHERE user_id = %s", (points, id))
+        #update points in cache (wird später beim Flush in DB geschrieben)
+        u = await Get.user(id)
+        u.points = points
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
+
         return points
-    
-    
-    def eggs(id):
-        class Egg:
-            def __init__(self, id, owner_id, creator_id, type, is_rotten, time):
-                self.id = id
-                self.owner_id = owner_id
-                self.creator_id = creator_id
-                self.type = type
-                self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-86400 and type == "gekochtes Hühnerei")) else False
-        eggs = Database.execute_and_fetchall("SELECT * FROM eggs WHERE owner_id = %s", (id,)) 
-        time = tm.time()
-        if eggs:
-            eggs = [Egg(egg[0], egg[1], egg[2], egg[3], egg[4], time) for egg in eggs]
-            eggs.sort(key=lambda x: x.id)
-            return eggs
-        else:
-            return []
-        
-    def type_eggs(id, type):
-        class Egg:
-            def __init__(self, id, owner_id, creator_id, type, is_rotten, time):
-                self.id = id
-                self.owner_id = owner_id
-                self.creator_id = creator_id
-                self.type = type
-                self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-86400 and type == "gekochtes Hühnerei")) else False
-        eggs = Database.execute_and_fetchall("SELECT * FROM eggs WHERE owner_id = %s AND type = %s", (id, type))
-        time = tm.time()
-        if eggs:
-            return [Egg(egg[0], egg[1], egg[2], egg[3], egg[4], time) for egg in eggs]
-        else:
-            return []
-        
-    def type_eggs_not_rotten(id, type):
-        eggs = Get.type_eggs(id, type)
-        if eggs:
-            return [egg for egg in eggs if egg.is_rotten == False]
-        else:
-            return []
-        
-    def egg(id):
-        class Egg:
-            def __init__(self, id, owner_id, creator_id, type, is_rotten, time):
-                self.id = id
-                self.owner_id = owner_id
-                self.creator_id = creator_id
-                self.type = type
-                self.is_rotten = True if ((is_rotten <= time-3600 and type == "ungekochtes Hühnerei") or (is_rotten <= time-86400 and type == "gekochtes Hühnerei")) else False
-        egg = Database.execute_and_fetchone("SELECT * FROM eggs WHERE egg_id = %s", (id,))
-        time = tm.time()
-        if egg:
-            return Egg(egg[0], egg[1], egg[2], egg[3], egg[4], time)
-        else:
-            return None
-        
-    def egg_check(id, type):
-        eggs = Get.eggs(id)
+
+
+
+    @staticmethod
+    async def eggs(id):
+        assert Database.handler is not None
+        return await Database.handler.eggs_of_owner(id)
+
+    @staticmethod
+    async def type_eggs(id, type):
+        assert Database.handler is not None
+        return await Database.handler.eggs_of_owner_by_type(id, normalize_egg_type(type))
+
+    @staticmethod
+    async def type_eggs_not_rotten(id, type):
+        eggs = await Get.type_eggs(id, type)
+        return [egg for egg in eggs if egg.is_rotten is False]
+
+    @staticmethod
+    async def egg(id):
+        assert Database.handler is not None
+        return await Database.handler.egg_by_id(id)
+
+    @staticmethod
+    async def egg_check(id, type):
+        eggs = await Get.eggs(id)
+        type = normalize_egg_type(type)
         for egg in eggs:
-            if egg.type == type and egg.is_rotten == False:
+            if egg.type == type and egg.is_rotten is False:
                 return egg
         return False
-    
-    def bake_check(id):
-        eggs = Get.eggs(id)
-        chocolate_eggs = len(Get.type_eggs(id, "Schokoei"))
-        uncooked_eggs = len([egg for egg in eggs if egg.type == "ungekochtes Hühnerei" and egg.is_rotten == False])
-        if chocolate_eggs >= 10 and uncooked_eggs >= 3:
-            return True
-        else:
-            return False
-        
-    def solo_fights(id):
-        class SoloFight:
-            def __init__(self, id, challenger_id, defender_id, chocolate_egg_bet, winner_id):
-                self.id = id
-                self.challenger_id = challenger_id
-                self.defender_id = defender_id
-                self.chocolate_egg_bet = chocolate_egg_bet
-                self.winner_id = winner_id
-        solo_fights = Database.execute_and_fetchall("SELECT * FROM egg_fights WHERE challenger_id = %s OR defender_id = %s", (id, id))
-        if solo_fights:
-            return [SoloFight(solo_fight[0], solo_fight[1], solo_fight[2], solo_fight[3], solo_fight[4]) for solo_fight in solo_fights]
-        else:
-            return None
-        
-    def group_fight(id):
-        class GroupFight:
-            def __init__(self, id, participants, chocolate_egg_bet, first_place_id, second_place_id, third_place_id):
-                self.id = id
-                self.participants = participants
-                self.chocolate_egg_bet = chocolate_egg_bet
-                self.first_place_id = first_place_id
-                self.second_place_id = second_place_id
-                self.third_place_id = third_place_id
-        group_fights = Database.execute_and_fetchall("SELECT * FROM group_fights WHERE first_place_id = %s OR second_place_id = %s OR third_place_id = %s", (id, id, id))
 
-        if group_fights:
-            return [GroupFight(group_fight[0], group_fight[1], group_fight[2], group_fight[3], group_fight[4], group_fight[5]) for group_fight in group_fights]
-        else:
-            return None
-            
-    def throws(id):
-        class Throw:
-            def __init__(self, id, thrower_id, target_id, success):
-                self.id = id
-                self.thrower_id = thrower_id
-                self.target_id = target_id
-                self.success = True if success == 1 else False
-        throws = Database.execute_and_fetchall("SELECT * FROM egg_throws WHERE thrower_id = %s OR target_id = %s", (id, id,))
-        if throws:
-            return [Throw(throw[0], throw[1], throw[2], throw[3]) for throw in throws]
-        else:
-            return None
-        
-    def hits(id):
-        throws = 0
-        hits = 0
-        data = Get.throws(id)
-        if not data:
-            return (0, 0)
-        for throw in data:
-            if throw.target_id == str(id):
-                throws += 1
-                if throw.success:
-                    hits += 1
-        
-        return (throws, hits)
-        
-    def own_throws(id):
-        throws = Get.throws(id)
-        if throws:
-            return [throw for throw in throws if throw.thrower_id == str(id)]
-        else:
-            return []
-        
-    def cakes(id):
-        class Cake:
-            def __init__(self, id, user_id):
-                self.id = id
-                self.user_id = user_id
-        cakes = Database.execute_and_fetchall("SELECT * FROM cakes WHERE user_id = %s", (id,))
-        if cakes:
-            return [Cake(cake[0], cake[1]) for cake in cakes]
-        else:
-            return []
-        
-    def notifications(id):
-        notifications = Database.execute_and_fetchall("SELECT notifications FROM users WHERE user_id = %s", (id,))
-        return True if notifications[0][0] == 1 else False
-    
-    def top(limit):
-        class User:
-            def __init__(self, id, points):
-                self.id = id
-                self.points = points
-        users = Database.execute_and_fetchall("SELECT user_id, points FROM users ORDER BY points DESC LIMIT %s", (limit,))
-        if users:
-            return [User(user[0], user[1]) for user in users if user[0] != "111111111111111111"]
-        else:
-            return []
-        
-    def top_position(id):
-        users = Get.top(1000)
-        for i, user in enumerate(users):
-            if user.id == str(id):
-                return i+1
-        return None
-    
-    def group_fight_check(id):
-        #get the last_fight from the database
-        last_fight = Database.execute_and_fetchall("SELECT last_fight FROM users WHERE user_id = %s", (id,))
-        if last_fight[0][0] <= tm.time()-300:
-            return True
-        else:
-            return False
-    
-    def rabbit_foot_amount(id):
-        rabbit_foot = Database.execute_and_fetchall("SELECT rabbit_foot_count FROM users WHERE user_id = %s", (id,))
-        return rabbit_foot[0][0]
-    
-    def used_rabbit_foot_amount(id):
-        rabbit_foot = Database.execute_and_fetchall("SELECT used_rabbit_foot_count FROM users WHERE user_id = %s", (id,))
-        return rabbit_foot[0][0]
-    
-    def user_collect_amount(id):
-        collect = Database.execute_and_fetchone("SELECT used_collect FROM users WHERE user_id = %s", (id,))
-        return collect[0]
+    @staticmethod
+    async def bake_check(id):
+        eggs = await Get.eggs(id)
+        chocolate_eggs = (await Get.user(id)).chocolate_eggs
+        uncooked_eggs = len([e for e in eggs if normalize_egg_type(e.type) == "uncooked" and e.is_rotten is False])
+        return chocolate_eggs >= 10 and uncooked_eggs >= 3
 
-    def user_found_nests(id):
-        nests = Database.execute_and_fetchall("SELECT found_nests FROM users WHERE user_id = %s", (id,))
-        return nests[0][0]
+    @staticmethod
+    async def notifications(id):
+        u = await Get.user(id)
+        return bool(u.notifications)
+
+    @staticmethod
+    async def rabbit_foot_amount(id):
+        u = await Get.user(id)
+        return u.rabbit_foot_count
+
+    @staticmethod
+    async def used_rabbit_foot_amount(id):
+        u = await Get.user(id)
+        return u.used_rabbit_foot_count
+
+    @staticmethod
+    async def user_collect_amount(id):
+        u = await Get.user(id)
+        return u.used_collect
+
+    @staticmethod
+    async def user_found_nests(id):
+        u = await Get.user(id)
+        return u.found_nests
+
+    @staticmethod
+    async def talisman_check(id):
+        u = await Get.user(id)
+        return False if u.egg_talisman > 0 else True
+
+    @staticmethod
+    async def talisman_type(id):
+        u = await Get.user(id)
+        return u.egg_talisman
     
-    def talisman_check(id):
-        talisman = Database.execute_and_fetchone("SELECT egg_talisman FROM users WHERE user_id = %s", (id,))
-        return False if talisman[0] > 0 else True
-    
-    def talisman_type(id):
-        talisman = Database.execute_and_fetchone("SELECT egg_talisman FROM users WHERE user_id = %s", (id,))
-        return talisman[0]
-    
+    @staticmethod
+    async def probabilities(id):
+        talisman = await Get.talisman_type(id)
+        cooked = 0.577 if talisman == 0 else 0.677 if talisman == 1 else 0.477
+        uncooked = round(0.873 - cooked, 3)
+        return (cooked, uncooked)
+
+    @staticmethod
     def throw_percent(points):
-        if points <=30:
-            return random.randint(20,50)
+        # rein logisch, kein DB Zugriff -> kann sync bleiben
+        if points <= 30:
+            return random.randint(20, 50)
         elif points <= 150:
             return random.randint(7, 20)
         else:
             return random.randint(2, 7)
-        
-    def tickets(id):
-        tickets = Database.execute_and_fetchone("SELECT tickets FROM users WHERE user_id = %s", (id,))
-        return tickets[0]
+
+    @staticmethod
+    async def tickets(id):
+        u = await Get.user(id)
+        return u.tickets
+    
+    @staticmethod
+    async def top_position(id):
+        assert Database.handler is not None
+        await Database.handler.wait_ready()
+
+        users = list(Database.handler.users.values())
+        users.sort(key=lambda u: u.points, reverse=True)
+
+        for i, u in enumerate(users, start=1):
+            if u.user_id == str(id):
+                return i
+        return None
 
 
 class Add:
-    def user(id):
-        #check if user already exists
-        if Database.execute_and_fetchone("SELECT * FROM users WHERE user_id = %s", (id,)):
+    @staticmethod
+    async def user(id):
+        """
+        Im neuen System: get_or_create_user legt User im Cache an und markiert dirty.
+        """
+        await Get.user(id)
+
+    @staticmethod
+    async def lose(id, amount):
+        u = await Get.user(id)
+        # delete one cooked egg pro lose
+        for _ in range(amount):
+            eggs = await Get.type_eggs_not_rotten(id, "cooked")
+            if not eggs:
+                break
+            egg_to_delete = eggs[0]
+            await Database.handler.delete_egg(egg_to_delete.id)
+        u.tickets += amount
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
+
+    @staticmethod
+    async def cake(id):
+        u = await Get.user(id)
+        u.cakes += 1
+        u.chocolate_eggs -= 10
+
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
+
+        eggs = await Get.type_eggs_not_rotten(id, "uncooked")
+        for i in range(min(3, len(eggs))):
+            egg_to_delete = eggs[i]
+            await Database.handler.delete_egg(egg_to_delete.id)
+
+    @staticmethod
+    async def multiple_eggs(id, egg_type, amount):
+        for _ in range(amount):
+            await Add.egg(id, egg_type)
+
+    @staticmethod
+    async def egg(id, type):
+        """
+        Queue't ein neues Egg. egg_id entsteht erst beim Flush (AUTOINCREMENT).
+        """
+        assert Database.handler is not None
+        type = normalize_egg_type(type)
+        if type == "Schokoei":
+        # update cholate_eggs in the user cache (wird später beim Flush in DB geschrieben)
+            u = await Get.user(id)
+            u.chocolate_eggs += 1
+            assert Database.handler is not None
+            async with Database.handler._lock:
+                Database.handler.dirty_users.add(u.user_id)
             return
-        Database.execute_and_commit("INSERT INTO users (user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count) VALUES (%s, %s, %s, %s, %s)", (id, 0, 0, 0, 0))
-        
-    def multiple_eggs(id, egg_type, amount):
-        for i in range(amount):
-            Add.egg(id, egg_type)
+        await Database.handler.queue_new_egg(owner_id=id, creator_id=id, egg_type=type)
 
-    def egg(id, type):
-        Database.execute_and_commit("INSERT INTO eggs (owner_id, creator_id, type, is_rotten) VALUES (%s, %s, %s, %s)", (id, id, type, tm.time()))
-        
-    def solo_fight(challenger_id, defender_id, chocolate_egg_bet, winner_id):
-        Database.execute_and_commit("INSERT INTO egg_fights (challenger_id, defender_id, chocolate_egg_bet, winner_id) VALUES (%s, %s, %s, %s)", (challenger_id, defender_id, chocolate_egg_bet, winner_id))
-        
-    def group_fight(participants, chocolate_egg_bet, first_place_id, second_place_id, third_place_id):
-        Database.execute_and_commit("INSERT INTO group_fights (participants, chocolate_egg_bet, first_place_id, second_place_id, third_place_id) VALUES (%s, %s, %s, %s, %s)", (len(participants), chocolate_egg_bet, first_place_id, second_place_id, third_place_id))
-        
-    def throw(thrower_id, target_id, success):
-        Database.execute_and_commit("INSERT INTO egg_throws (thrower_id, target_id, success) VALUES (%s, %s, %s)", (thrower_id, target_id, success))
-        
-    def cake(user_id):
-        Database.execute_and_commit("INSERT INTO cakes (user_id) VALUES (%s)", (user_id,))
-        eggs = Get.type_eggs(user_id, "Schokoei")
-        for i in range(10):
-            Delete.egg(eggs[i].id)
-        eggs = Get.type_eggs(user_id, "ungekochtes Hühnerei")
-        i = 0
-        for egg in eggs:
-            if egg.is_rotten == False:
-                Delete.egg(egg.id)
-                i += 1
-            if i == 3:
-                break
+    @staticmethod
+    async def throw(thrower_id, defender_id, success):
+        thrower = await Get.user(thrower_id)
+        defender = await Get.user(defender_id)
 
-    def lose(user_id, amount):
-        Database.execute_and_commit("UPDATE users SET tickets = tickets + %s WHERE user_id = %s", (amount, user_id))
-        eggs = Get.type_eggs(user_id, "gekochtes Hühnerei")
-        i = 0
-        for egg in eggs:
-            if egg.is_rotten == False:
-                Delete.egg(egg.id)
-                i += 1
-            if i == amount:
-                break
+        thrower.eggs_throwen += 1
+        if success:
+            thrower.eggs_hit += 1
+            defender.own_eggs_hit += 1
+            defender.eggs_throwen_at += 1
+        else:
+            defender.eggs_throwen_at += 1
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(thrower.user_id)
+            Database.handler.dirty_users.add(defender.user_id)
+
+
+    @staticmethod
+    async def solo_fight(challenger_id, defender_id, chocolate_egg_bet, winner_id):
+        challenger = await Get.user(challenger_id)
+        defender = await Get.user(defender_id)
+        winner = await Get.user(winner_id)
+
+        # Bet abziehen
+        challenger.chocolate_eggs -= chocolate_egg_bet
+        defender.chocolate_eggs -= chocolate_egg_bet
+
+        # Gewinn auszahlen
+        winner.chocolate_eggs += chocolate_egg_bet * 2
+
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(challenger.user_id)
+            Database.handler.dirty_users.add(defender.user_id)
+            Database.handler.dirty_users.add(winner.user_id)
+    
+
 
 class Update:
-    def user_last_hit(id):
-        Database.execute_and_commit("UPDATE users SET last_hit = %s WHERE user_id = %s", (tm.time(), id))
+    @staticmethod
+    async def user_last_hit(id):
+        u = await Get.user(id)
+        u.last_hit = int(tm.time())
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
 
-    def user_egg_talisman(id, egg_talisman):
-        Database.execute_and_commit("UPDATE users SET egg_talisman = %s WHERE user_id = %s", (egg_talisman, id))
+    @staticmethod
+    async def user_egg_talisman(id, egg_talisman):
+        u = await Get.user(id)
+        u.egg_talisman = int(egg_talisman)
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
 
-    def user_add_one_rabbit_foot_count(id):
-        Database.execute_and_commit("UPDATE users SET rabbit_foot_count = rabbit_foot_count + 1 WHERE user_id = %s", (id,))
+    @staticmethod
+    async def user_add_one_rabbit_foot_count(id):
+        u = await Get.user(id)
+        u.rabbit_foot_count += 1
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
 
-    def user_remove_one_rabbit_foot_count(id):
-        Database.execute_and_commit("UPDATE users SET rabbit_foot_count = rabbit_foot_count - 1, used_rabbit_foot_count = used_rabbit_foot_count + 1 WHERE user_id = %s", (id,))
+    @staticmethod
+    async def user_remove_one_rabbit_foot_count(id):
+        u = await Get.user(id)
+        u.rabbit_foot_count -= 1
+        u.used_rabbit_foot_count += 1
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
 
-    def egg_owner(id, owner_id):
-        Database.execute_and_commit("UPDATE eggs SET owner_id = %s WHERE egg_id = %s", (owner_id, id))
+    @staticmethod
+    async def egg_owner(id, owner_id):
+        """
+        Bei dir: Update eggs SET owner_id = ...
+        Hier: Cache + DB Update (der Teil ist aktuell "sofort", siehe Handler-Kommentar).
+        """
+        assert Database.handler is not None
+        await Database.handler.set_egg_owner(id, owner_id)
 
-    def user_notifications(id, notifications):
-        Database.execute_and_commit("UPDATE users SET notifications = %s WHERE user_id = %s", (notifications, id))
+    @staticmethod
+    async def user_notifications(id, notifications):
+        u = await Get.user(id)
+        u.notifications = bool(notifications)
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
 
-    def leaderboard(limit):
-        users = Get.top(limit)
-        for i, user in enumerate(users):
-            points = Get.points(user.id)
-            Database.execute_and_commit("UPDATE users SET points = %s WHERE user_id = %s", (points, user.id))
-    
-    def last_fight(id):
-        Database.execute_and_commit("UPDATE users SET last_fight = %s WHERE user_id = %s", (tm.time(), id))
+    @staticmethod
+    async def last_fight(id):
+        u = await Get.user(id)
+        u.last_fight = int(tm.time())
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
 
-    def reset_last_fight(id):
-        Database.execute_and_commit("UPDATE users SET last_fight = 0 WHERE user_id = %s", (id,))
-        Add.egg(id, "gekochtes Hühnerei")
+    @staticmethod
+    async def reset_last_fight(id):
+        u = await Get.user(id)
+        u.last_fight = 0
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
+        await Add.egg(id, "cooked")
 
-    def user_add_collect(id):
-        Database.execute_and_commit("UPDATE users SET used_collect = used_collect + 1 WHERE user_id = %s", (id,))
+    @staticmethod
+    async def user_add_collect(id):
+        u = await Get.user(id)
+        u.used_collect += 1
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
 
-    def stats_location(location):
-        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = %s", (location,))
-        Update.stats_add_nests_searched()
+    @staticmethod
+    async def user_add_found_nests(id):
+        u = await Get.user(id)
+        u.found_nests += 1
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(u.user_id)
 
-    def stats_add_nests_found():
-        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = 'nests_found'")
+    # stats-Updates: im Cache inkrementieren (dirty_stats)
+    @staticmethod
+    async def stats_location(location):
+        assert Database.handler is not None
+        await Database.handler.stats_inc(location, 1)
+        await Update.stats_add_nests_searched()
 
-    def stats_add_nests_searched():
-        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = 'nests_searched'")
+    @staticmethod
+    async def stats_add_nests_found():
+        assert Database.handler is not None
+        await Database.handler.stats_inc("nests_found", 1)
 
-    def user_add_found_nests(id):
-        Database.execute_and_commit("UPDATE users SET found_nests = found_nests + 1 WHERE user_id = %s", (id,))
+    @staticmethod
+    async def stats_add_nests_searched():
+        assert Database.handler is not None
+        await Database.handler.stats_inc("nests_searched", 1)
 
-    def stats_deleted_cooked():
-        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = 'deleted_cooked'")
-    
-    def stats_deleted_uncooked():
-        Database.execute_and_commit("UPDATE stats SET value = value + 1 WHERE stat = 'deleted_uncooked'")
-            
+    @staticmethod
+    async def stats_deleted_cooked():
+        assert Database.handler is not None
+        await Database.handler.stats_inc("deleted_cooked", 1)
+
+    @staticmethod
+    async def stats_deleted_uncooked():
+        assert Database.handler is not None
+        await Database.handler.stats_inc("deleted_uncooked", 1)
+
+    @staticmethod
+    async def leaderboard(top):
+        assert Database.handler is not None
+        await Database.handler.wait_ready()
+
+        users = list(Database.handler.users.values())
+        for u in users:
+            u.points = await Get.points(u.user_id)
 
 
 class Gen:
-    def nest(location, ctx, rabbit_foot):
+    @staticmethod
+    async def nest(location, ctx, rabbit_foot):
         if rabbit_foot != 0:
             rabbit_foot = True
         class Nest:
@@ -447,7 +996,7 @@ class Gen:
                 self.egg_talisman = egg_talisman
                 self.rabbit_foot_count = rabbit_foot_count
 
-        probabilities = Get.probabilities(ctx.author.id)
+        probabilities = await Get.probabilities(ctx.author.id)
         type = random.choices(["empty", "normal", "special"], weights=[0.25, 0.7, 0.05])[0]
         if type == "empty":
             return Nest(location=location, type="empty")
@@ -461,7 +1010,7 @@ class Gen:
                                                    schokoei=random.randint(5, 15) * (2 if rabbit_foot else 1),
                                                    gekochtesEi=0 if random.random() < probabilities[0] else (random.randint(2, 4) * (2 if rabbit_foot else 1)),
                                                    ungekochtesEi=0 if random.random() < probabilities[1] else (random.randint(2, 4) * (2 if rabbit_foot else 1)),
-                                                   egg_talisman=1 if Get.talisman_check(ctx.author.id) and random.random() <= 0.27 else 0,
+                                                   egg_talisman=1 if await Get.talisman_check(ctx.author.id) and random.random() <= 0.27 else 0,
                                                    rabbit_foot_count=1 * (2 if rabbit_foot else 1) if random.random() <= 0.395 else 0)
         
     def solo_fight_text(winner, loser, chocolate_egg_bet, participants):
@@ -541,8 +1090,52 @@ class Gen:
                     f"Das Ei von <@{looser}> hat den Kampf verloren. Vielleicht nächstes Mal!"])
         return string
 
+
+class Delete:
+    @staticmethod
+    async def egg(id):
+        """
+        Löscht Egg aus Cache und queued DB delete.
+        Zusätzlich Stats inkrementieren wie früher.
+        """
+        egg = await Get.egg(id)
+        assert Database.handler is not None
+
+        await Database.handler.delete_egg(id)
+
+        if egg:
+            egg_type = normalize_egg_type(egg.type)
+            if egg_type == "cooked":
+                await Update.stats_deleted_cooked()
+            elif egg_type == "uncooked":
+                await Update.stats_deleted_uncooked()
+
+
+class Transfer:
+    @staticmethod
+    async def chocolate_eggs(from_id, to_id, amount):
+        from_user = await Get.user(from_id)
+        to_user = await Get.user(to_id)
+
+        if from_user.chocolate_eggs < amount:
+            raise ValueError("Nicht genug Schokoeier zum Transferieren.")
+
+        from_user.chocolate_eggs -= amount
+        to_user.chocolate_eggs += amount
+
+        assert Database.handler is not None
+        async with Database.handler._lock:
+            Database.handler.dirty_users.add(from_user.user_id)
+            Database.handler.dirty_users.add(to_user.user_id)
+
+
+# ------------------------------------------------------
+# Translate / Gen kannst du fast 1:1 übernehmen,
+# nur überall await Get.* benutzen, wo DB gebraucht wird.
+# ------------------------------------------------------
 class Translate:
-    def nest(nest):
+    @staticmethod
+    async def nest(nest):
         if nest.type == "empty":
             return "Luft"
         else:
@@ -560,21 +1153,20 @@ class Translate:
             return nest_info.strip()
         
 
-    def leaderboard(top):
+    @staticmethod
+    async def leaderboard(top):
+        assert Database.handler is not None
+        await Database.handler.wait_ready()
+
+        async with Database.handler._lock:
+            users = list(Database.handler.users.values())
+
+        # Filter wie früher (111111...)
+        users = [u for u in users if u.user_id != "111111111111111111"]
+        users.sort(key=lambda u: u.points, reverse=True)
+
+        users = users[:top]
         string = ""
-        top = Get.top(top)
-        for i, user in enumerate(top):
-            string += f"{i+1}. <@{user.id}> - {format_number(user.points)}\n"
-        
+        for i, user in enumerate(users):
+            string += f"{i+1}. <@{user.user_id}> - {format_number(user.points)}\n"
         return string.strip()
-
-        
-class Delete:
-    def egg(id):
-        egg = Get.egg(id)
-        Database.execute_and_commit("DELETE FROM eggs WHERE egg_id = %s", (id,))
-        if egg.type == "gekochtes Hühnerei":
-            Update.stats_deleted_cooked()
-        elif egg.type == "ungekochtes Hühnerei":
-            Update.stats_deleted_uncooked()
-
