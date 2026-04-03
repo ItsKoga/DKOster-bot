@@ -458,130 +458,138 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                 self.timeout = 60
 
             async def on_timeout(self):
-                await self.message.edit(view=None)
-                if bet*len(self.value) > 500:
-                    return await self.message.reply("Das Maximum an <:Schoko_Ei:1221556659030196284> für einen Gruppenkampf beträgt 500x <:Schoko_Ei:1221556659030196284>!")
-                
-                for user in self.value:
-                    check = await system.Get.type_eggs(user, "cooked")
-                    if check == []:
-                        self.value.remove(user)
-                        log(f"/group_fight : {user} hat kein gekochtes Hühnerei!", "ERROR")
-                    else:
-                        await system.Delete.egg(check[0].id)
-                        log(f"/group_fight : {user} sein gekochtes Hühnerei wurde entfernt!", "SYSTEM")
                 global group_fight_running
-
-                if len(self.value) < 3:
-                    group_fight_running = False
+                try:
+                    await self.message.edit(view=None)
+                    if bet*len(self.value) > 500:
+                        group_fight_running = False
+                        return await self.message.reply("Das Maximum an <:Schoko_Ei:1221556659030196284> für einen Gruppenkampf beträgt 500x <:Schoko_Ei:1221556659030196284>!")
+                    
                     for user in self.value:
-                        await system.Update.reset_last_fight(user)
-                        log(f"/group_fight : {user} hat sein gekochtes Hühnerei zurück erhalten!", "SYSTEM")
-                    return await self.message.reply("Nicht genug Spieler für den Gruppenkampf!")
-                
-                string = "\n".join([f"- <@{user}>" for user in self.value])
-                embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!\n**Teilnehmer:({len(self.value)}/4)** \n{string}", color=0xec6726)
-                embed.set_footer(text=f"Made by ItsKoga ❤")
-                log(f"/group_fight : Gruppenkampf beginnt mit {len(self.value)} Spielern!", "SYSTEM")
-                msg = await self.message.reply(embed=embed)
+                        check = await system.Get.type_eggs(user, "cooked")
+                        if check == []:
+                            self.value.remove(user)
+                            log(f"/group_fight : {user} hat kein gekochtes Hühnerei!", "ERROR")
+                        else:
+                            await system.Delete.egg(check[0].id)
+                            log(f"/group_fight : {user} sein gekochtes Hühnerei wurde entfernt!", "SYSTEM")
 
-                eggs = 0
-                await system.Add.user(111111111111111111)
-                for user in self.value:
-                    eggs += bet
-                    await system.Transfer.chocolate_eggs(user, 111111111111111111, bet)
-                log(f"/group_fight : Eggs für Belohnungen wurden geladen!", "SYSTEM")
-                                                                    
-                await asyncio.sleep(5)
+                    if len(self.value) < 3:
+                        group_fight_running = False
+                        for user in self.value:
+                            await system.Update.reset_last_fight(user)
+                            log(f"/group_fight : {user} hat sein gekochtes Hühnerei zurück erhalten!", "SYSTEM")
+                        return await self.message.reply("Nicht genug Spieler für den Gruppenkampf!")
+                    
+                    string = "\n".join([f"- <@{user}>" for user in self.value])
+                    embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!\n**Teilnehmer:({len(self.value)}/4)** \n{string}", color=0xec6726)
+                    embed.set_footer(text=f"Made by ItsKoga ❤")
+                    log(f"/group_fight : Gruppenkampf beginnt mit {len(self.value)} Spielern!", "SYSTEM")
+                    msg = await self.message.reply(embed=embed)
 
-                egg_amount = eggs
-                rewards = [int(egg_amount*0.6), int(egg_amount*0.25), int(egg_amount*0.15)]
-                if sum(rewards) < egg_amount:
-                    rewards[0] += sum(rewards) - egg_amount
-                if sum(rewards) > bet*len(self.value):
-                    rewards[0] += sum(rewards) - egg_amount
-                log(f"/group_fight : Belohnungen wurden berechnet! ({rewards})", "SYSTEM")
+                    eggs = 0
+                    await system.Add.user(111111111111111111)
+                    for user in self.value:
+                        eggs += bet
+                        await system.Transfer.chocolate_eggs(user, 111111111111111111, bet)
+                    log(f"/group_fight : Eggs für Belohnungen wurden geladen!", "SYSTEM")
+                                                                        
+                    await asyncio.sleep(5)
 
-                top = []
-                while len(self.value) > 2:
-                    player1 = random.choice(self.value)
-                    player2 = random.choice([player for player in self.value if player != player1])
-                    log(f"/group_fight : {player1} und {player2} kämpfen!", "SYSTEM")
+                    egg_amount = eggs
+                    rewards = [int(egg_amount*0.6), int(egg_amount*0.25), int(egg_amount*0.15)]
+                    if sum(rewards) < egg_amount:
+                        rewards[0] += sum(rewards) - egg_amount
+                    if sum(rewards) > bet*len(self.value):
+                        rewards[0] += sum(rewards) - egg_amount
+                    log(f"/group_fight : Belohnungen wurden berechnet! ({rewards})", "SYSTEM")
 
-                    winner = random.choice([player1, player2])
-                    looser = player1 if winner == player2 else player2
-                    log(f"/group_fight : {winner} hat den Kampf gegen {looser} gewonnen!", "SYSTEM")
-        
-                    top.append(looser)
+                    top = []
+                    while len(self.value) > 2:
+                        player1 = random.choice(self.value)
+                        player2 = random.choice([player for player in self.value if player != player1])
+                        log(f"/group_fight : {player1} und {player2} kämpfen!", "SYSTEM")
 
-                    embed = discord.Embed(title="Gruppenkampf", description=f"<@{player1}> und <@{player2}> kämpfen!", color=0xec6726)
+                        winner = random.choice([player1, player2])
+                        looser = player1 if winner == player2 else player2
+                        log(f"/group_fight : {winner} hat den Kampf gegen {looser} gewonnen!", "SYSTEM")
+            
+                        top.append(looser)
+
+                        embed = discord.Embed(title="Gruppenkampf", description=f"<@{player1}> und <@{player2}> kämpfen!", color=0xec6726)
+                        embed.set_footer(text=f"Made by ItsKoga ❤")
+                        msg = await msg.reply(embed=embed)
+                        log(f"/group_fight : Embed wurde erstellt und gesendet!", "SYSTEM")
+
+                        await asyncio.sleep(5)
+                        
+                        embed = discord.Embed(title="Gruppenkampf", description=system.Gen.group_fight_text([player1, player2]), color=0xec6726)
+                        embed.set_footer(text=f"Made by ItsKoga ❤")
+                        msg = await msg.reply(embed=embed)
+                        log(f"/group_fight : Embed wurde erstellt und gesendet!", "SYSTEM")
+
+                        await asyncio.sleep(5)
+
+                        embed = discord.Embed(title="Gruppenkampf", description=f"<@{winner}> hat den Kampf gewonnen!\n\
+<@{looser}> ist auf Platz {len(self.value)} ausgeschieden!", color=0xec6726)
+                        embed.set_footer(text=f"Made by ItsKoga ❤")
+                        msg = await msg.reply(embed=embed)
+                        log(f"/group_fight : Embed wurde erstellt und gesendet!", "SYSTEM")
+
+                        self.value.remove(looser)
+                        log(f"/group_fight : {looser} wurde aus dem Kampf entfernt!", "SYSTEM")
+
+                        await asyncio.sleep(5)
+
+                    embed = discord.Embed(title="Gruppenkampf", description=f"<@{self.value[0]}> und <@{self.value[1]}> ditschen was das Zeug hält!, wer wird sich den ersten Platz holen?", color=0xec6726)
                     embed.set_footer(text=f"Made by ItsKoga ❤")
                     msg = await msg.reply(embed=embed)
-                    log(f"/group_fight : Embed wurde erstellt und gesendet!", "SYSTEM")
+                    log(f"/group_fight : Der letzte Kampf beginnt!", "SYSTEM")
+
+                    await asyncio.sleep(5)
+
+                    winner = random.choice(self.value)
+                    looser = self.value[0] if winner == self.value[1] else self.value[1]
+                    log(f"/group_fight : {winner} hat den Gruppenkampf gewonnen!", "SYSTEM")
+
+                    top.append(looser)
+                    top.reverse()
+                    self.value.remove(looser)
+
+                    embed = discord.Embed(title="Gruppenkampf", description=system.Gen.group_fight_loose_text(looser), color=0xec6726)
+                    embed.set_footer(text=f"Made by ItsKoga ❤")
+                    msg = await msg.reply(embed=embed)
+                    log(f"/group_fight : Alle Kämpfe sind beendet!", "SYSTEM")
 
                     await asyncio.sleep(5)
                     
-                    embed = discord.Embed(title="Gruppenkampf", description=system.Gen.group_fight_text([player1, player2]), color=0xec6726)
+                    embed = discord.Embed(title="Gruppenkampf", description=system.Gen.group_fight_loose_text(looser))
+
                     embed.set_footer(text=f"Made by ItsKoga ❤")
                     msg = await msg.reply(embed=embed)
-                    log(f"/group_fight : Embed wurde erstellt und gesendet!", "SYSTEM")
+                    log(f"/group_fight : {self.value[0]} hat den Gruppenkampf gewonnen!", "SYSTEM")
 
-                    await asyncio.sleep(5)
+                    participants = [self.value[0]] + top
 
-                    embed = discord.Embed(title="Gruppenkampf", description=f"<@{winner}> hat den Kampf gewonnen!\n\
-<@{looser}> ist auf Platz {len(self.value)} ausgeschieden!", color=0xec6726)
-                    embed.set_footer(text=f"Made by ItsKoga ❤")
-                    msg = await msg.reply(embed=embed)
-                    log(f"/group_fight : Embed wurde erstellt und gesendet!", "SYSTEM")
+                    for i in range(len(rewards)):
+                        await system.Transfer.chocolate_eggs(111111111111111111, participants[i], rewards[i])
+                        log(f"/group_fight : {rewards[i]} Schokoeier wurden an {participants[i]} übertragen!", "SYSTEM")
+                        await system.Get.points(participants[i])
 
-                    self.value.remove(looser)
-                    log(f"/group_fight : {looser} wurde aus dem Kampf entfernt!", "SYSTEM")
-
-                    await asyncio.sleep(5)
-
-                embed = discord.Embed(title="Gruppenkampf", description=f"<@{self.value[0]}> und <@{self.value[1]}> ditschen was das Zeug hält!, wer wird sich den ersten Platz holen?", color=0xec6726)
-                embed.set_footer(text=f"Made by ItsKoga ❤")
-                msg = await msg.reply(embed=embed)
-                log(f"/group_fight : Der letzte Kampf beginnt!", "SYSTEM")
-
-                await asyncio.sleep(5)
-
-                winner = random.choice(self.value)
-                looser = self.value[0] if winner == self.value[1] else self.value[1]
-                log(f"/group_fight : {winner} hat den Gruppenkampf gewonnen!", "SYSTEM")
-
-                top.append(looser)
-                top.reverse()
-                self.value.remove(looser)
-
-                embed = discord.Embed(title="Gruppenkampf", description=system.Gen.group_fight_loose_text(looser), color=0xec6726)
-                embed.set_footer(text=f"Made by ItsKoga ❤")
-                msg = await msg.reply(embed=embed)
-                log(f"/group_fight : Alle Kämpfe sind beendet!", "SYSTEM")
-
-                await asyncio.sleep(5)
-                
-                embed = discord.Embed(title="Gruppenkampf", description=system.Gen.group_fight_loose_text(looser))
-
-                embed.set_footer(text=f"Made by ItsKoga ❤")
-                msg = await msg.reply(embed=embed)
-                log(f"/group_fight : {self.value[0]} hat den Gruppenkampf gewonnen!", "SYSTEM")
-
-                participants = [self.value[0]] + top
-
-                for i in range(len(rewards)):
-                    await system.Transfer.chocolate_eggs(111111111111111111, participants[i], rewards[i])
-                    log(f"/group_fight : {rewards[i]} Schokoeier wurden an {participants[i]} übertragen!", "SYSTEM")
-                    await system.Get.points(participants[i])
-
-                embed = discord.Embed(title="Gruppenkampf", description=f"<@{self.value[0]}> hat den Gruppenkampf gewonnen!\n\n\
+                    embed = discord.Embed(title="Gruppenkampf", description=f"<@{self.value[0]}> hat den Gruppenkampf gewonnen!\n\n\
 <@{self.value[0]}> erhält {rewards[0]}x <:Schoko_Ei:1221556659030196284>!\n\
 <@{top[0]}> erhält {rewards[1]}x <:Schoko_Ei:1221556659030196284>!\n\
 <@{top[1]}> erhält {rewards[2]}x <:Schoko_Ei:1221556659030196284>!", color=discord.Color.green())
-                embed.set_footer(text=f"Made by ItsKoga ❤")
-                await msg.edit(embed=embed)
-                group_fight_running = False
-                log(f"/group_fight : Der Gruppenkampf ist beendet!", "SYSTEM")
+                    embed.set_footer(text=f"Made by ItsKoga ❤")
+                    await msg.edit(embed=embed)
+                    group_fight_running = False
+                    log(f"/group_fight : Der Gruppenkampf ist beendet!", "SYSTEM")
+                except discord.Forbidden as error:
+                    group_fight_running = False
+                    log(f"/group_fight : Fehlende Berechtigung beim Senden/Bearbeiten von Nachrichten! {error}", "ERROR")
+                except Exception as error:
+                    group_fight_running = False
+                    log(f"/group_fight : Unerwarteter Fehler in on_timeout: {error}", "CRITICAL")
 
 
             @discord.ui.button(label="Beitreten", style=discord.ButtonStyle.green)
