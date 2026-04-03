@@ -112,7 +112,7 @@ class Game(commands.Cog):
         if ctx.command.name == "collect":
             await asyncio.sleep(120)
             embed = discord.Embed(title="Du kannst wieder /collect ausführen!", description="Es ist zwei Minuten her, seitdem du Punkte für das Oster-Event gesammelt hast.\n\
-Führe jetzt wieder /collect im Channel <#1362812143992312000> aus!\n\n\
+Führe jetzt wieder /collect im Channel <#1489517152300957766> aus!\n\n\
 Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping einfach mit dem /notify Befehl.", color=discord.Color.random())
             embed.set_footer(text=f"Made by ItsKoga ❤")
             if await system.Get.notifications(ctx.author.id):
@@ -130,8 +130,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         log(f"{ctx.author.name} hat nach Eiern gesucht!", "USER_ACTION")
         profile = await system.Get.user(ctx.author.id)
         embed = discord.Embed(title="Eiersuche", description="Wo willst du suchen", color=0xec6726)
-        #embed.set_image(url="https://i.imgur.com/AsSh0xY.png") alt
-        embed.set_image(url="https://i.imgur.com/b7u3qAL.png")
+        embed.set_image(url=random.choice(["https://i.imgur.com/b7u3qAL.png", "https://i.imgur.com/AsSh0xY.png"]))
         embed.set_footer(text=f"Made by ItsKoga ❤")
         #log("/collect : Embed wurde erstellt!", "DEBUG")
 
