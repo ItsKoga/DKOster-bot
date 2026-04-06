@@ -359,8 +359,8 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
             return await ctx.response.send_message("Du kannst nicht gegen Bots kämpfen!", ephemeral=True)
         if bet < 1:
             return await ctx.response.send_message("Du musst mindestens 1 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
-        if bet > 25:
-            return await ctx.response.send_message("Du kannst maximal 25 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
+        if bet > 100:
+            return await ctx.response.send_message("Du kannst maximal 100 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
         if (await system.Get.user(ctx.author.id)).chocolate_eggs < bet:
             return await ctx.response.send_message("Du hast nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
         if (await system.Get.user(user.id)).chocolate_eggs < bet:
@@ -391,6 +391,7 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                 self.value = True
                 self.disable_all_items()
                 await interaction.message.edit(view=self)
+                start_time = tm.perf_counter()
 
                 winner = random.choice([ctx.author.id, user.id])
                 looser = ctx.author.id if winner == user.id else user.id
@@ -409,6 +410,8 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
                 await system.Transfer.chocolate_eggs(looser, winner, bet)
                 log(f"/fight : {winner} hat {bet} Schokoeier von {looser} erhalten!", "SUCCESS")
                 await system.Delete.egg((await system.Get.egg_check(looser, "cooked")).id)
+                fight_end_time = tm.perf_counter()
+                log(f"/fight : Kampf Dauer: {fight_end_time - start_time:.2f} Sekunden", "DEBUG")
 
                 await asyncio.sleep(4)
                 embed = discord.Embed(title="Kampf", description=system.Gen.solo_fight_text(winner, looser, bet, [ctx.author.id, user.id]), color=0xec6726)
