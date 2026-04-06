@@ -53,7 +53,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title=":egg: Rohes Ei", 
-                                      description="Rohe Eier finden sich in <:Eier_Nest:1221556705490636880>, mit ihnen können andere Spieler abgeworfen werden, um <:Schoko_Ei:1221556659030196284> von diesen zu klauen. Außerdem werden sie benötigt, um einen :cake zu backen. Es ist jedoch zu beachten, dass sie nach 3 Stunden verfaulen.", color=0xec6726)
+                                      description="Rohe Eier finden sich in <:Eier_Nest:1221556705490636880>, mit ihnen können andere Spieler abgeworfen werden, um <:Schoko_Ei:1221556659030196284> von diesen zu klauen. Außerdem werden sie benötigt, um einen :cake: zu backen. Es ist jedoch zu beachten, dass sie nach 3 Stunden verfaulen.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
