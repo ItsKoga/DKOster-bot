@@ -814,12 +814,11 @@ class Add:
         defender = await Get.user(defender_id)
 
         thrower.eggs_throwen += 1
+        defender.own_throws += 1
         if success:
+            defender.own_hits += 1
             thrower.eggs_hit += 1
-            defender.own_eggs_hit += 1
-            defender.eggs_throwen_at += 1
-        else:
-            defender.eggs_throwen_at += 1
+            
         assert Database.handler is not None
         async with Database.handler._lock:
             Database.handler.dirty_users.add(thrower.user_id)
