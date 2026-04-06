@@ -1,15 +1,3 @@
-"""
-system.py (neu): Alte API-Form (Database/Get/Add/Update/Delete),
-aber:
-- SQLite (aiosqlite) statt MySQL
-- Cache + dirty flush alle 5 Minuten
-
-So rufst du es später in Cogs auf:
-    u = await system.Get.user(ctx.author.id)
-    eggs = await system.Get.eggs(ctx.author.id)
-    await system.Add.egg(ctx.author.id, "Schokoei")
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -79,11 +67,9 @@ class EggRow:
     owner_id: str
     creator_id: str
     type: str
-    # Wir speichern in DB eine Zahl (timestamp), bei dir war es "is_rotten" aber eigentlich "created/rotten_at"
     rotten_ts: int
 
 
-# Diese Egg-Klasse entspricht dem alten Verhalten (property is_rotten wird "live" berechnet)
 class EggView:
     def __init__(self, row: EggRow, now: float):
         self.id = row.egg_id
@@ -91,8 +77,7 @@ class EggView:
         self.creator_id = row.creator_id
         self.type = row.type
 
-        # altes Verhalten: egg ist rotten wenn timestamp alt genug ist (abhängig vom Typ)
-        # row.rotten_ts ist bei dir "tm.time()" beim Insert
+        # row.rotten_ts ist "tm.time()" beim Insert
         self.is_rotten = (
             (row.rotten_ts <= now - 3600 and row.type == "uncooked")
             or (row.rotten_ts <= now - 86400 and row.type == "cooked")
@@ -140,13 +125,13 @@ class SQLiteCacheDB:
         # Für eggs unterscheiden wir:
         # - neue eggs (haben temporäre negative egg_id, müssen inserted werden)
         # - deleted eggs (nur IDs)
-        # - geänderte eggs (z.B. owner_id) - diese werden bei Flush mit UPDATE persistiert
+        # - geänderte eggs (z.B. owner_id geändert, müssen per UPDATE aktualisiert werden)
         self.new_eggs: List[Tuple[int, str, str, str, int]] = []  # (temp_egg_id, owner_id, creator_id, type, rotten_ts)
         self.deleted_eggs: Set[int] = set()
         self.dirty_eggs: Set[int] = set()  # Eggs mit geänderten Feldern (z.B. owner)
         self._next_temp_egg_id: int = -1
 
-        # stats: wenn wir in Cache inkrementieren, merken wir welche Keys geändert wurden
+        # stats: key -> value (value ist immer int)
         self.dirty_stats: Set[str] = set()
 
     async def start(self):
@@ -461,12 +446,13 @@ class SQLiteCacheDB:
     async def flush_loop(self):
         """
         Hintergrund-Loop: speichert alle 5 Minuten.
-        Falls ein Fehler passiert, fangen wir ihn, damit der Loop nicht dauerhaft stirbt.
+        Falls ein Fehler passiert, wird er geloggt, aber der Loop läuft weiter (nächster Versuch in 5 Minuten).
+         - z.B. könnte die DB temporär nicht erreichbar sein, oder es gibt einen Fehler im Flush-Code, der erstmal behoben werden muss.
         """
         try:
             await self.flush_dirty()
         except Exception as e:
-            print("DB Flush Fehler:", e)
+            self.log(f"DB Flush Fehler: {e}", "ERROR")
 
     @flush_loop.before_loop
     async def before_flush(self):
@@ -522,7 +508,7 @@ class SQLiteCacheDB:
     async def queue_new_egg(self, owner_id: int, creator_id: int, egg_type: str):
         """
         Legt ein neues Egg an, aber schreibt es nicht sofort in DB:
-        - wir queue'n es in self.new_eggs
+        - wird gequeued in self.new_eggs
         - beim Flush wird es inserted und dann in Cache übernommen (mit egg_id)
         """
         await self.wait_ready()
@@ -610,8 +596,8 @@ class SQLiteCacheDB:
 # ------------------------------------------------------
 class Database:
     """
-    Hier gibt es nicht mehr "connect pro query", sondern 1 Handler.
-    Du initialisierst system.Database.handler in main.py.
+    Hier gibt es statische Methoden, die von außen aufgerufen werden (z.B. in game.py).
+    Diese Methoden greifen auf den Handler zu, der im Cache-Modus läuft.
     """
     handler: Optional[SQLiteCacheDB] = None
 
@@ -808,7 +794,7 @@ class Add:
     @staticmethod
     async def egg(id, type):
         """
-        Queue't ein neues Egg. egg_id entsteht erst beim Flush (AUTOINCREMENT).
+        Queued ein neues Egg. egg_id entsteht erst beim Flush (AUTOINCREMENT).
         """
         assert Database.handler is not None
         type = normalize_egg_type(type)
@@ -1038,7 +1024,9 @@ class Gen:
                       "Die Eier scheinen aus Stahl zu sein, keiner gibt nach.",
                       "Ein Duell, das in die Geschichte eingehen wird. Wer wird gewinnen?",
                       "Die Spannung ist kaum auszuhalten, beide Eier sind noch intakt.",
-                      "Ein wahres Kopf-an-Kopf-Rennen, die Entscheidung steht noch aus."])
+                      "Ein wahres Kopf-an-Kopf-Rennen, die Entscheidung steht noch aus.",
+                      "Wer hat das härtere Ei? Noch wirken beide sehr solide.",
+                      "Es sieht aus, als ob keiner der beiden nachgeben möchte.",])
         return strig
     
     def group_fight_text(participants):
@@ -1065,7 +1053,9 @@ class Gen:
                     "Es sieht aus, als ob keiner der beiden nachgeben möchte.",
                     "Ein Schlagabtausch der Extraklasse, die Eier prallen immer wieder aufeinander.",
                     "Die Menge tobt, während die Eier aufeinanderkrachen.",
-                    "Ein Duell, das die Zuschauer in Atem hält."])
+                    "Ein Duell, das die Zuschauer in Atem hält.",
+                    "Die Eier scheinen unzerstörbar, doch wer wird am Ende triumphieren?",
+                    "Die Spannung ist greifbar, während die Eier aufeinander treffen.",])
         
         return string
     
@@ -1088,7 +1078,13 @@ class Gen:
                     f"Das Ei von <@{looser}> hat den Druck nicht überstanden. Schade!",
                     f"Ein harter Treffer, und das Ei von <@{looser}> ist Geschichte.",
                     f"Das war ein harter Schlag! <@{looser}> ist ausgeschieden.",
-                    f"Das Ei von <@{looser}> hat den Kampf verloren. Vielleicht nächstes Mal!"])
+                    f"Das Ei von <@{looser}> hat den Kampf verloren. Vielleicht nächstes Mal!",
+                    f"Ein letzter Schlag, und das Ei von <@{looser}> zerbricht. Das war's!",
+                    f"Das Ei von <@{looser}> hat den Geist aufgegeben. Ein harter Verlust!",
+                    f"Ein lautes Plopp, und <@{looser}> ist raus aus dem Spiel.",
+                    f"Das Ei von <@{looser}> hat den Druck nicht überstanden. Schade!",
+                    f"Ein harter Treffer, und das Ei von <@{looser}> ist Geschichte.",
+                    f"Das war ein harter Schlag! <@{looser}> ist ausgeschieden.",])
         return string
 
 
@@ -1097,7 +1093,7 @@ class Delete:
     async def egg(id):
         """
         Löscht Egg aus Cache und queued DB delete.
-        Zusätzlich Stats inkrementieren wie früher.
+        Zusätzlich Stats inkrementieren
         """
         egg = await Get.egg(id)
         assert Database.handler is not None
@@ -1131,8 +1127,7 @@ class Transfer:
 
 
 # ------------------------------------------------------
-# Translate / Gen kannst du fast 1:1 übernehmen,
-# nur überall await Get.* benutzen, wo DB gebraucht wird.
+# Translate
 # ------------------------------------------------------
 class Translate:
     @staticmethod
