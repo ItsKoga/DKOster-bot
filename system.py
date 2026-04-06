@@ -1086,6 +1086,22 @@ class Gen:
                     f"Ein harter Treffer, und das Ei von <@{looser}> ist Geschichte.",
                     f"Das war ein harter Schlag! <@{looser}> ist ausgeschieden.",])
         return string
+    
+    def throw_text(success, defender, percent, reward):
+        if success:
+            string = random.choice([f"Du hast ein :egg: auf <@{defender.user_id}> geworfen und getroffen! Du hast {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten!",
+                        f"Volltreffer! Dein :egg: hat <@{defender.user_id}> getroffen! Du hast {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten!",
+                        f"Dein Wurf war erfolgreich! <@{defender.user_id}> wurde getroffen! Du hast {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten!",
+                        f"Treffer! Dein :egg: hat <@{defender.user_id}> erwischt! Du hast {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten!",
+                        f"Du hast <@{defender.user_id}> mit deinem :egg: getroffen! {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` für dich!",])
+        else:
+            string = random.choice([f"Leider hast du <@{defender.user_id}> mit deinem :egg: verfehlt. Schade!",
+                        f"Dein Wurf ging daneben, <@{defender.user_id}> ist nicht getroffen worden.",
+                        f"Leider kein Treffer! <@{defender.user_id}> bleibt verschont.",
+                        f"Dein :egg: hat sein Ziel verfehlt, <@{defender.user_id}> ist nicht getroffen worden.",
+                        f"Schade, dein Wurf war nicht erfolgreich. <@{defender.user_id}> bleibt unversehrt.",])
+        return string
+
 
 
 class Delete:

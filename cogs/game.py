@@ -332,11 +332,12 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
             #transfer the eggs
             await system.Transfer.chocolate_eggs(user.id, ctx.author.id, real_reward)
 
-
+            throw_text = system.Gen.throw_text(success, defender, percent, reward)
             #log(f"/throw : {ctx.author.name} hat {reward} Schokoeier von {user.name} erhalten!", "DEBUG")
             if real_reward == reward:
-                embed = discord.Embed(title="Eierwurf", description=f"Du hast ein :egg: auf {user.mention} geworfen und getroffen! Du hast {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten!", color=discord.Color.green())
+                embed = discord.Embed(title="Eierwurf", description=throw_text, color=discord.Color.green())
             else:
+                embed = discord.Embed(title="Eierwurf", description=throw_text+f"\nAllerdings hatte {user.mention} nur {eggs}x <:Schoko_Ei:1221556659030196284> und du hast somit nur {real_reward}x <:Schoko_Ei:1221556659030196284> erhalten!", color=discord.Color.green())
                 embed = discord.Embed(title="Eierwurf", description=f"Du hast ein :egg: auf {user.mention} geworfen und getroffen! Du hast {real_reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten! Der rest war bei der Oma.", color=discord.Color.green())
             
             await system.Update.user_last_hit(user.id)
