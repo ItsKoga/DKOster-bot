@@ -279,6 +279,9 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
             for i in range(rewards.rabbit_foot_count):
                 await system.Update.user_add_one_rabbit_foot_count(ctx.author.id)
                 log(f"/collect : {ctx.author.name} hat eine Hasenpfote erhalten!", "SUCCESS")
+            for i in range(rewards.cakes):
+                await system.Add.cake(ctx.author.id, nested=True)
+                log(f"/collect : {ctx.author.name} hat einen Kuchen erhalten!", "SUCCESS")
 
             if rewards.schokoei or rewards.gekochtesEi or rewards.ungekochtesEi:
                 await system.Update.stats_add_nests_found()

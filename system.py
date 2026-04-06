@@ -772,19 +772,22 @@ class Add:
             Database.handler.dirty_users.add(u.user_id)
 
     @staticmethod
-    async def cake(id):
+    async def cake(id, nested=False):
         u = await Get.user(id)
         u.cakes += 1
-        u.chocolate_eggs -= 10
+        if not nested:
+            u.chocolate_eggs -= 10
 
         assert Database.handler is not None
         async with Database.handler._lock:
             Database.handler.dirty_users.add(u.user_id)
 
-        eggs = await Get.type_eggs_not_rotten(id, "uncooked")
-        for i in range(min(3, len(eggs))):
-            egg_to_delete = eggs[i]
-            await Database.handler.delete_egg(egg_to_delete.id)
+        if not nested:
+
+            eggs = await Get.type_eggs_not_rotten(id, "uncooked")
+            for i in range(min(3, len(eggs))):
+                egg_to_delete = eggs[i]
+                await Database.handler.delete_egg(egg_to_delete.id)
 
     @staticmethod
     async def multiple_eggs(id, egg_type, amount):
@@ -973,7 +976,7 @@ class Gen:
         if rabbit_foot != 0:
             rabbit_foot = True
         class Nest:
-            def __init__(self, location, type, schokoei=0, gekochtesEi=0, ungekochtesEi=0, egg_talisman=0, rabbit_foot_count=0):
+            def __init__(self, location, type, schokoei=0, gekochtesEi=0, ungekochtesEi=0, egg_talisman=0, rabbit_foot_count=0, cakes=0):
                 self.location = location
                 self.type = type
                 self.schokoei = schokoei
@@ -981,6 +984,7 @@ class Gen:
                 self.ungekochtesEi = ungekochtesEi
                 self.egg_talisman = egg_talisman
                 self.rabbit_foot_count = rabbit_foot_count
+                self.cakes = cakes
 
         probabilities = await Get.probabilities(ctx.author.id)
         type = random.choices(["empty", "normal", "special"], weights=[0.25, 0.7, 0.05])[0]
@@ -997,7 +1001,8 @@ class Gen:
                                                    gekochtesEi=0 if random.random() < probabilities[0] else (random.randint(2, 4) * (2 if rabbit_foot else 1)),
                                                    ungekochtesEi=0 if random.random() < probabilities[1] else (random.randint(2, 4) * (2 if rabbit_foot else 1)),
                                                    egg_talisman=1 if await Get.talisman_check(ctx.author.id) and random.random() <= 0.27 else 0,
-                                                   rabbit_foot_count=1 * (2 if rabbit_foot else 1) if random.random() <= 0.395 else 0)
+                                                   rabbit_foot_count=1 * (2 if rabbit_foot else 1) if random.random() <= 0.395 else 0,
+                                                   cakes=1 * (2 if rabbit_foot else 1) if random.random() <= 0.5 else 0)
         
     def solo_fight_text(winner, loser, chocolate_egg_bet, participants):
         strig = random.choice(["Die beiden Eier scheinen einiges auszuhalten.",
@@ -1161,6 +1166,8 @@ class Translate:
                 nest_info += f"Eier Talisman\n"
             if nest.rabbit_foot_count != 0:
                 nest_info += f"{nest.rabbit_foot_count}x Hasenpfote\n"
+            if nest.cakes != 0:
+                nest_info += f"{nest.cakes}x Kuchen\n"
             return nest_info.strip()
         
 

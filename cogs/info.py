@@ -75,7 +75,7 @@ class Info(commands.Cog):
                 if interaction.user.id != self.value:
                     return await interaction.response.send_message("Nutze doch /info um dir die Erklärung des Bots anzusehen!", ephemeral=True)
                 embed = discord.Embed(title=":cake: Kuchen", 
-                                      description="Aus 10x <:Schoko_Ei:1221556659030196284> und 3x :egg: lässt sich von deiner Oma ein :cake: backen, welcher 10 Punkte wert ist. Deine Oma beschützt diesen Kuchen, sodass er nicht geklaut werden kann.", color=0xec6726)
+                                      description="Aus 10x <:Schoko_Ei:1221556659030196284> und 3x :egg: lässt sich von deiner Oma ein :cake: backen, welcher 10 Punkte wert ist. Deine Oma beschützt diesen Kuchen, sodass er nicht geklaut werden kann. Alternativ kann man mit einer 1% Chance aus einem Special Nest auch einen bekommen.", color=0xec6726)
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 self.enable_all_items()
                 button.disabled = True
