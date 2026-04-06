@@ -290,7 +290,7 @@ class SQLiteCacheDB:
                 tickets=r[12],
                 eggs_throwen=r[13],
                 eggs_hit=r[14],
-                own_eggs_hit=r[15]
+                own_eggs_hit=r[15],
                 eggs_throwen_at=r[16]
             )
 
