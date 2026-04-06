@@ -1,6 +1,8 @@
 import sqlite3
 import time
 
+import random
+
 
 SYSTEM_USER_ID = "111111111111111111"
 TOP_N = 5
@@ -41,7 +43,7 @@ def main():
     users = cur.execute(
         """
         SELECT user_id, egg_talisman, rabbit_foot_count, used_rabbit_foot_count,
-               points, cakes, chocolate_eggs, used_collect, found_nests,
+             points, cakes, chocolate_eggs, used_collect, found_nests, tickets,
                eggs_throwen, eggs_hit, own_eggs_hit, eggs_throwen_at
         FROM users
         WHERE user_id != ?
@@ -71,6 +73,9 @@ def main():
     total_found_nests = sum(int(user["found_nests"]) for user in users)
     print(f"Nester gefunden(nicht leer): {total_found_nests}")
 
+    total_tickets = sum(int(user["tickets"]) for user in users)
+    print(f"Tickets insgesamt: {total_tickets}")
+
     print("\n")
 
     collect_ranking = sorted(
@@ -86,6 +91,13 @@ def main():
         reverse=True,
     )
     print_top("**Top 5 User, die die meisten Kuchen erstellt haben:**", cakes_ranking, " Kuchen")
+
+    tickets_ranking = sorted(
+        [(str(user["user_id"]), int(user["tickets"])) for user in users],
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    print_top("Top 5 User mit den meisten Tickets:", tickets_ranking, " Tickets")
 
     print("\n")
 
@@ -165,43 +177,22 @@ def main():
 
     print("\n")
 
-    if table_exists(cur, "egg_throws"):
-        throws = cur.execute("SELECT thrower_id, defender_id, success FROM egg_throws").fetchall()
-        print(f"Würfe insgesamt: {len(throws)}")
+    
+    throws_amount = 0
+    for user in users:
+        throws_amount += int(user["eggs_throwen"])
 
-        print("\n")
-
-        throw_stats: dict[str, dict[str, int]] = {
-            str(user["user_id"]): {"throws": 0, "successful": 0, "hits": 0, "hits_received": 0}
-            for user in users
+    print(f"Würfe insgesamt: {throws_amount}")
+    print("\n")
+    throw_stats = {
+        str(user["user_id"]): {
+            "throws": int(user["eggs_throwen"]),
+            "successful": int(user["eggs_hit"]),
+            "hits": int(user["own_eggs_hit"]),
+            "hits_received": int(user["eggs_throwen_at"]),
         }
-
-        for throw in throws:
-            thrower = str(throw["thrower_id"])
-            defender = str(throw["defender_id"])
-            success = int(throw["success"]) == 1
-
-            if thrower in throw_stats:
-                throw_stats[thrower]["throws"] += 1
-                if success:
-                    throw_stats[thrower]["successful"] += 1
-            if defender in throw_stats:
-                throw_stats[defender]["hits_received"] += 1
-                if success:
-                    throw_stats[defender]["hits"] += 1
-
-    else:
-        print("Würfe insgesamt: aus users-Zählern berechnet (keine egg_throws Tabelle)")
-        print("\n")
-        throw_stats = {
-            str(user["user_id"]): {
-                "throws": int(user["eggs_throwen"]),
-                "successful": int(user["eggs_hit"]),
-                "hits": int(user["own_eggs_hit"]),
-                "hits_received": int(user["eggs_throwen_at"]),
-            }
-            for user in users
-        }
+        for user in users
+    }
 
     print_top(
         "**Top 5 User, die die meisten Eier geworfen haben:**",
@@ -236,6 +227,18 @@ def main():
 
     for location in ["1", "2", "3", "4", "5"]:
         print(f"An der Location {location} wurde {stat_value(stats, location)} mal gesucht")
+
+
+    #giveaway
+    users_giveaway = [(user[0], user[12]) for user in users]
+    users_giveaway_ready = []
+    for user in users_giveaway:
+        for _ in range(user[1]):
+            users_giveaway_ready.append(user[0])
+    print(len(users_giveaway))
+
+    for i in range(3):
+        print(random.choice(users_giveaway_ready))
 
     conn.close()
     print(f"\nTime: {time.strftime('%M:%S', time.gmtime(time.time() - start))}")

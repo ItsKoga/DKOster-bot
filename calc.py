@@ -1,12 +1,13 @@
 import random
 
 
-amount = 100000 # Amount of /collects to simulate
+amount = 1000 # Amount of /collects to simulate
 
 chocolate_eggs = 0
 cooked_eggs = 0
 uncooked_eggs = 0
 rabbit_foots = 0
+found_rabbit_foots = 0
 talisman = 0
 
 empty = 0
@@ -44,12 +45,12 @@ class Gen:
                                                    rabbit_foot_count=1 * (2 if rabbit_foot else 1) if random.random() <= 0.395 else 0)
 
 for i in range(amount):
-    locations = ["1", "2", "3", "4", "5"]
-    nests = []
-    for j in range(5):
-        nests.append(Gen.nest(locations[j]))
-
-    choice = random.choice(nests)
+    if rabbit_foots > 0:
+        choice = Gen.nest(random.choice("4"), rabbit_foot=True)
+        rabbit_foots -= 1
+        found_rabbit_foots += 1
+    else:
+        choice = Gen.nest(random.choice("4"), rabbit_foot=True)
 
 
     chocolate_eggs += choice.schokoei
@@ -73,7 +74,7 @@ def print_better(amountOf, name):
 print_better(chocolate_eggs, "Schokoeier")
 print_better(cooked_eggs, "Gekochte Eier")
 print_better(uncooked_eggs, "Ungekochte Eier")
-print_better(rabbit_foots, "Hasenpfoten")
+print_better(found_rabbit_foots, "Hasenpfoten")
 print_better(talisman, "Talisman")
 print_better(empty, "Leere Nester")
 print_better(normal, "Normale Nester")
