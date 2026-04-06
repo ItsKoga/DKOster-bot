@@ -1087,7 +1087,7 @@ class Gen:
                     f"Das war ein harter Schlag! <@{looser}> ist ausgeschieden.",])
         return string
     
-    def throw_text(success, defender, percent, reward):
+    def throw_text(success, defender, percent=None, reward=None):
         if success:
             string = random.choice([f"Du hast ein :egg: auf <@{defender.user_id}> geworfen und getroffen! Du hast {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten!",
                         f"Volltreffer! Dein :egg: hat <@{defender.user_id}> getroffen! Du hast {reward}x <:Schoko_Ei:1221556659030196284>`{percent}%` erhalten!",

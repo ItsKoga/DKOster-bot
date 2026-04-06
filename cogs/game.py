@@ -314,7 +314,8 @@ Du möchtest keine Benachrichtigungen mehr erhalten? Dann deaktiviere den Ping e
         defender = await system.Get.user(user.id)
         
         if success == 0:
-            embed = discord.Embed(title="Eierwurf", description=f"Du hast ein :egg: auf {user.mention} geworfen, aber es ist daneben gegangen!", color=discord.Color.red())
+            throw_text = system.Gen.throw_text(success, defender)
+            embed = discord.Embed(title="Eierwurf", description=throw_text, color=discord.Color.red())
 
         else:
             points = defender.points
