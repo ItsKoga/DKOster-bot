@@ -1,319 +1,245 @@
-import system
+import sqlite3
 import time
 
-start = time.time()
-
-users = system.Database.execute_and_fetchall("SELECT * FROM users")
-for user in users:
-    if user[0] == "111111111111111111":
-        users.remove(user)
-print(f"Users Gesamt: {len(users)}")
-amount_0 = 0
-for user in users:
-    amount_0 += system.Get.points(user[0])
-print(f"Punkte insgesamt: {amount_0}")
-
-users_with_talisman = [user for user in users if user[2] != 0]
-print(f"User mit Talisman: {len(users_with_talisman)}")
-
-current_rabbit_foots = [user for user in users if user[3] != 0]
-amount_1 = 0
-for user in current_rabbit_foots:
-    amount_1 += user[3]
-
-print(f"Aktuelle Hasenpfoten: {amount_1}")
-
-used_rabbit_foots = [user for user in users if user[4] != 0]
-amount_2 = 0
-for user in used_rabbit_foots:
-    amount_2 += user[4]
-print(f"Benutzte Hasenpfoten: {amount_2}")
-
-print(f"Hasenpfoten insgesamt: {amount_1 + amount_2}")
-
-used_collects = [user for user in users if user[8] != 0]
-amount_3 = 0
-for user in used_collects:
-    amount_3 += user[8]
-print(f"/collect ausgeführt: {amount_3}")
-
-found_nests = [user for user in users if user[9] != 0]
-amount_4 = 0
-for user in found_nests:
-    amount_4 += user[9]
-print(f"Nester gefunden(nicht leer): {amount_4}")
-
-print("\n")
-
-print("Top 5 User, die am meisten /collect ausgeführt haben:")
-users.sort(key=lambda x: x[8], reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{users[i][0]}> : {users[i][8]}")
-
-class User:
-    def __init__(self, user_id, cakes):
-        self.user_id = user_id
-        self.cakes = cakes
-
-users_created_cakes = []
-for user in users:
-    cakes = system.Database.execute_and_fetchall(f"SELECT * FROM cakes WHERE user_id = '{user[0]}'")
-    users_created_cakes.append(User(user[0], cakes))
-
-print("**Top 5 User, die die meisten Kuchen erstellt haben:**")
-users_created_cakes.sort(key=lambda x: len(x.cakes), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{users_created_cakes[i].user_id}> : {len(users_created_cakes[i].cakes)} Kuchen")
-
-
-print("\n")
-
-eggs = system.Database.execute_and_fetchall("SELECT * FROM eggs")
-cakes = system.Database.execute_and_fetchall("SELECT * FROM cakes")
-print(f"Kuchen insgesamt: {len(cakes)}")
-
-chocolate_eggs = [egg for egg in eggs if egg[3] == "Schokoei"]
-amount_5 = len(chocolate_eggs) + len(cakes)*10
-print(f"Schokoeier insgesamt gefunden: {amount_5}")
-
-cooked_eggs = [egg for egg in eggs if egg[3] == "gekochtes Hühnerei"]
-deleted_cooked = system.Database.execute_and_fetchall("SELECT * FROM stats WHERE stat = 'deleted_cooked'")[0][1]
-amount_6 = len(cooked_eggs) + deleted_cooked
-print(f"Gekochte Eier insgesamt gefunden: {amount_6}")
-
-uncooked_eggs = [egg for egg in eggs if egg[3] == "ungekochtes Hühnerei"]
-deleted_uncooked = system.Database.execute_and_fetchall("SELECT * FROM stats WHERE stat = 'deleted_uncooked'")[0][1]
-amount_7 = len(uncooked_eggs) + deleted_uncooked
-print(f"Ungekochte Eier insgesamt gefunden: {amount_7}")
-
-print("\n")
-
-users_created_eggs = []
-class User:
-    def __init__(self, user_id, chocolate_eggs, cooked_eggs, uncooked_eggs):
-        self.user_id = user_id
-        self.chocolate_eggs = chocolate_eggs
-        self.cooked_eggs = cooked_eggs
-        self.uncooked_eggs = uncooked_eggs
-for user in users:
-    chocolate_eggs = [egg for egg in eggs if egg[3] == "Schokoei" and egg[1] == user[0]]
-    cooked_eggs = [egg for egg in eggs if egg[3] == "gekochtes Hühnerei" and egg[1] == user[0]]
-    uncooked_eggs = [egg for egg in eggs if egg[3] == "ungekochtes Hühnerei" and egg[1] == user[0]]
-
-    users_created_eggs.append(User(user[0], chocolate_eggs, cooked_eggs, uncooked_eggs))
-
-print("**Top 5 User, die die meisten Schokoeier erstellt haben:**")
-users_created_eggs.sort(key=lambda x: len(x.chocolate_eggs), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{users_created_eggs[i].user_id}> : {len(users_created_eggs[i].chocolate_eggs)} Schokoeier")
- 
-print("**Top 5 User, die die meisten gekochten Eier erstellt haben:**")
-users_created_eggs.sort(key=lambda x: len(x.cooked_eggs), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{users_created_eggs[i].user_id}> : {len(users_created_eggs[i].cooked_eggs)} gekochte Eier")
-
-print("**Top 5 User, die die meisten ungekochten Eier erstellt haben:**")
-users_created_eggs.sort(key=lambda x: len(x.uncooked_eggs), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{users_created_eggs[i].user_id}> : {len(users_created_eggs[i].uncooked_eggs)} ungekochte Eier")
-
-print("**Top 5 User, die die meisten Eier erstellt haben:**")
-users_created_eggs.sort(key=lambda x: len(x.chocolate_eggs) + len(x.cooked_eggs) + len(x.uncooked_eggs), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{users_created_eggs[i].user_id}> : {len(users_created_eggs[i].chocolate_eggs) + len(users_created_eggs[i].cooked_eggs) + len(users_created_eggs[i].uncooked_eggs)} Eier")
-
-print("\n")
-
-solo_fights = system.Database.execute_and_fetchall("SELECT * FROM egg_fights")
-print(f"Kämpfe insgesamt: {len(solo_fights)}")
-
-print("\n")
-
-class User:
-    def __init__(self, user_id, fights, wins, losses, started, accepted):
-        self.user_id = user_id
-        self.fights = fights
-        self.wins = wins
-        self.losses = losses
-        self.percentage = len(wins) / len(fights) * 100 if len(fights) != 0 else 0
-        self.started = started
-        self.accepted = accepted
-
-fights = []
-for user in users:
-    fights_list = [fight for fight in solo_fights if fight[1] == user[0] or fight[2] == user[0]]
-    wins = [fight for fight in fights_list if fight[4] == user[0]]
-    losses = [fight for fight in fights_list if fight[4] != user[0]]
-    started = [fight for fight in fights_list if fight[1] == user[0]]
-    accepted = [fight for fight in fights_list if fight[2] == user[0]]
-
-    fights.append(User(user[0], fights_list, wins, losses, started, accepted))
-
-print("**Top 5 User, die die meisten Solo-Fights gewonnen haben:**")
-fights.sort(key=lambda x: len(x.wins), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].wins)} Siege")
-
-print("**Top 5 User, die die meisten Solo-Fights verloren haben:**")
-fights.sort(key=lambda x: len(x.losses), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].losses)} Niederlagen")
-
-print("**Top 5 User, die die meisten Solo-Fights gestartet haben:**")
-fights.sort(key=lambda x: len(x.started), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].started)} Kämpfe gestartet")
-
-print("**Top 5 User, die die meisten Solo-Fight Anfragen angenommen haben:**")
-fights.sort(key=lambda x: len(x.accepted), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].accepted)} Anfragen angenommen")
-
-#remove users less than 25 fights
-fights = [fight for fight in fights if len(fight.fights) >= 30]
-
-print("**Top 5 User, die die höchste Gewinnrate haben(mindestens 30 Fights):**")
-fights.sort(key=lambda x: x.percentage, reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{fights[i].user_id}> : {fights[i].percentage:.2f}%")
-
-print("\n")
-
-throws = system.Database.execute_and_fetchall("SELECT * FROM egg_throws")
-print(f"Würfe insgesamt: {len(throws)}")
-
-print("\n")
-
-class User:
-    def __init__(self, user_id, throws):
-        self.user_id = user_id
-        self.throws = [throw for throw in throws if throw[1] == user_id]
-        self.successful_throws = [throw for throw in throws if throw[1] == user_id and throw[3] == 1]
-        self.hits = [throw for throw in throws if throw[2] == user_id and throw[3] == 1]
-        self.hits_received = [throw for throw in throws if throw[2] == user_id]
-        self.percentage = len(self.successful_throws) / len(self.throws) * 100 if len(self.throws) != 0 else 0
-
-throws_list = []
-for user in users:
-    throws_list.append(User(user[0], [throw for throw in throws if throw[1] == user[0] or throw[2] == user[0]]))
-
-print("**Top 5 User, die die meisten Eier geworfen haben:**")
-throws_list.sort(key=lambda x: len(x.throws), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{throws_list[i].user_id}> : {len(throws_list[i].throws)} Würfe")
-
-print("**Top 5 User, die die meisten erfolgreichen Eierwürfe hatten:**")
-throws_list.sort(key=lambda x: len(x.successful_throws), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{throws_list[i].user_id}> : {len(throws_list[i].successful_throws)} erfolgreiche Würfe")
-
-print("**Top 5 User, die am meisten abgeworfen wurden:**")
-throws_list.sort(key=lambda x: len(x.hits_received), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{throws_list[i].user_id}> : {len(throws_list[i].hits_received)} Versuche")
-
-print("**Top 5 User, die am meisten von Eiern getroffen worden:**")
-throws_list.sort(key=lambda x: len(x.hits), reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{throws_list[i].user_id}> : {len(throws_list[i].hits)}x getroffen worden")
-
-throws_list = [throw for throw in throws_list if len(throw.throws) >= 30]
-
-print("**Top 5 User, die die höchste Trefferquote haben(mindestens 30 Würfe):**")
-throws_list.sort(key=lambda x: x.percentage, reverse=True)
-for i in range(5):
-    print(f"{i + 1}. <@{throws_list[i].user_id}> : {throws_list[i].percentage:.2f}%")
-
-print("\n")
-
-for location in ["1", "2", "3", "4", "5"]:
-    data = system.Database.execute_and_fetchall(f"SELECT * FROM stats WHERE stat = '{location}'")
-    print(f"An der Location {location} wurde {data[0][1]} mal gesucht")
-
-print("\n")
-
-#group_fights = system.Database.execute_and_fetchall("SELECT * FROM group_fights")
-#print(f"Gruppenkämpfe insgesamt: {len(group_fights)}")
-
-#class User:
-#    def __init__(self, user_id, first_place, second_place, third_place):
-#        self.user_id = user_id
-#        self.first_place = first_place
-#        self.second_place = second_place
-#        self.third_place = third_place
-
-#fights = []
-#for user in users:
-#    first_place = [fight for fight in fights_list if fight[3] == user[0]]
-#    second_place = [fight for fight in fights_list if fight[4] == user[0]]
-#    third_place = [fight for fight in fights_list if fight[5] == user[0]]
-
-#    fights.append(User(user[0], first_place, second_place, third_place))
-
-#print("**Top 5 User, die die meisten Gruppenkämpfe gewonnen haben:**")
-#fights.sort(key=lambda x: len(x.first_place), reverse=True)
-#for i in range(5):
-#    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].first_place)} Siege")
-
-#print("**Top 5 User, die die meisten Gruppenkämpfe auf dem 2. Platz beendet haben:**")
-#fights.sort(key=lambda x: len(x.second_place), reverse=True)
-#for i in range(5):
-#    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].second_place)} 2. Plätze")
-
-#print("**Top 5 User, die die meisten Gruppenkämpfe auf dem 3. Platz beendet haben:**")
-#fights.sort(key=lambda x: len(x.third_place), reverse=True)
-#for i in range(5):
-#    print(f"{i + 1}. <@{fights[i].user_id}> : {len(fights[i].third_place)} 3. Plätze")
-
-#print("\n")
-
-#amount_8 = 0
-#for fight in group_fights:
-#    amount_8 += fight[1] * fight[2]
-
-#print(f"Schokoeier insgesamt gewonnen: {amount_8}")
-
-#print("\n")
-
-#class Fight:
-#    def __init__(self, participants, bet):
-#        self.participants = participants
-#        self.bet = bet
-#        self.bet_amount = 1
-#        self.participants_amount = 1
-
-#fights_bet = []
-#fights_participants = []
-
-#for fight in group_fights:
-#    if fight[1] in [fight.participants for fight in fights_participants]:
-#        for f in fights_participants:
-#            if f.participants == fight[1]:
-#                f.participants_amount += 1
-#    else:
-#        fights_participants.append(Fight(fight[1], fight[2]))
-#
-#    if fight[2] in [fight.bet for fight in fights_bet]:
-#        for f in fights_bet:
-#            if f.bet == fight[2]:
-#                f.bet_amount += 1
-#    else:
-#        fights_bet.append(Fight(fight[1], fight[2]))
-
-
-
-
-#print("**Top 5 Gruppenkämpfe häufigsten Teilnehmerzahl:**")
-#fights_participants.sort(key=lambda x: x.participants_amount, reverse=True)
-#for i in range(5):
-#    print(f"{i + 1}. {fights_participants[i].participants} Teilnehmer {fights_participants[i].participants_amount}x")
-
-#print("**Top 5 Gruppenkämpfe häufigsten Einsatz:**")
-##fights_bet.sort(key=lambda x: x.bet_amount, reverse=True)
-#for i in range(5):
-#    print(f"{i + 1}. {fights_bet[i].bet} Kuchen {fights_bet[i].bet_amount}x")
-
-#print("\n")
-
-
-print(f"\nTime: {time.strftime('%M:%S', time.gmtime(time.time() - start))}")
+
+SYSTEM_USER_ID = "111111111111111111"
+TOP_N = 5
+
+
+def table_exists(cursor: sqlite3.Cursor, table_name: str) -> bool:
+    row = cursor.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
+        (table_name,),
+    ).fetchone()
+    return row is not None
+
+
+def stat_value(stats: dict[str, int], key: str) -> int:
+    return int(stats.get(key, 0))
+
+
+def print_top(title: str, entries: list[tuple[str, float]], suffix: str = ""):
+    print(title)
+    if not entries:
+        print("Keine Daten vorhanden.")
+        return
+
+    for i, (user_id, value) in enumerate(entries[:TOP_N], start=1):
+        if isinstance(value, float):
+            print(f"{i}. <@{user_id}> : {value:.2f}{suffix}")
+        else:
+            print(f"{i}. <@{user_id}> : {int(value)}{suffix}")
+
+
+def main():
+    start = time.time()
+
+    conn = sqlite3.connect("data.db")
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    users = cur.execute(
+        """
+        SELECT user_id, egg_talisman, rabbit_foot_count, used_rabbit_foot_count,
+               points, cakes, chocolate_eggs, used_collect, found_nests,
+               eggs_throwen, eggs_hit, own_eggs_hit, eggs_throwen_at
+        FROM users
+        WHERE user_id != ?
+        """,
+        (SYSTEM_USER_ID,),
+    ).fetchall()
+
+    stats_rows = cur.execute("SELECT stat, value FROM stats").fetchall() if table_exists(cur, "stats") else []
+    stats = {row["stat"]: int(row["value"]) for row in stats_rows}
+
+    print(f"Users Gesamt: {len(users)}")
+    total_points = sum(int(user["points"]) for user in users)
+    print(f"Punkte insgesamt: {total_points}")
+
+    users_with_talisman = [user for user in users if int(user["egg_talisman"]) != 0]
+    print(f"User mit Talisman: {len(users_with_talisman)}")
+
+    current_rabbit_foots = sum(int(user["rabbit_foot_count"]) for user in users)
+    used_rabbit_foots = sum(int(user["used_rabbit_foot_count"]) for user in users)
+    print(f"Aktuelle Hasenpfoten: {current_rabbit_foots}")
+    print(f"Benutzte Hasenpfoten: {used_rabbit_foots}")
+    print(f"Hasenpfoten insgesamt: {current_rabbit_foots + used_rabbit_foots}")
+
+    total_collects = sum(int(user["used_collect"]) for user in users)
+    print(f"/collect ausgeführt: {total_collects}")
+
+    total_found_nests = sum(int(user["found_nests"]) for user in users)
+    print(f"Nester gefunden(nicht leer): {total_found_nests}")
+
+    print("\n")
+
+    collect_ranking = sorted(
+        [(str(user["user_id"]), int(user["used_collect"])) for user in users],
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    print_top("Top 5 User, die am meisten /collect ausgeführt haben:", collect_ranking)
+
+    cakes_ranking = sorted(
+        [(str(user["user_id"]), int(user["cakes"])) for user in users],
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    print_top("**Top 5 User, die die meisten Kuchen erstellt haben:**", cakes_ranking, " Kuchen")
+
+    print("\n")
+
+    eggs = cur.execute("SELECT owner_id, creator_id, type FROM eggs").fetchall() if table_exists(cur, "eggs") else []
+    print(f"Kuchen insgesamt: {sum(int(user['cakes']) for user in users)}")
+
+    # Im neuen Schema liegen Schokoeier im users.chocolate_eggs Feld.
+    total_chocolate_eggs = sum(int(user["chocolate_eggs"]) for user in users)
+    print(f"Schokoeier insgesamt gefunden: {total_chocolate_eggs}")
+
+    total_cooked_found = len([egg for egg in eggs if egg["type"] == "cooked"]) + stat_value(stats, "deleted_cooked")
+    total_uncooked_found = len([egg for egg in eggs if egg["type"] == "uncooked"]) + stat_value(stats, "deleted_uncooked")
+    print(f"Gekochte Eier insgesamt gefunden: {total_cooked_found}")
+    print(f"Ungekochte Eier insgesamt gefunden: {total_uncooked_found}")
+
+    print("\n")
+
+    solo_fights = (
+        cur.execute("SELECT challenger_id, defender_id, winner_id FROM egg_fights").fetchall()
+        if table_exists(cur, "egg_fights")
+        else []
+    )
+    print(f"Kämpfe insgesamt: {len(solo_fights)}")
+
+    print("\n")
+
+    fight_stats: dict[str, dict[str, int]] = {
+        str(user["user_id"]): {"fights": 0, "wins": 0, "losses": 0, "started": 0, "accepted": 0}
+        for user in users
+    }
+
+    for fight in solo_fights:
+        challenger = str(fight["challenger_id"])
+        defender = str(fight["defender_id"])
+        winner = str(fight["winner_id"])
+
+        if challenger in fight_stats:
+            fight_stats[challenger]["fights"] += 1
+            fight_stats[challenger]["started"] += 1
+        if defender in fight_stats:
+            fight_stats[defender]["fights"] += 1
+            fight_stats[defender]["accepted"] += 1
+        if winner in fight_stats:
+            fight_stats[winner]["wins"] += 1
+
+    for uid, values in fight_stats.items():
+        values["losses"] = values["fights"] - values["wins"]
+
+    print_top(
+        "**Top 5 User, die die meisten Solo-Fights gewonnen haben:**",
+        sorted([(uid, v["wins"]) for uid, v in fight_stats.items()], key=lambda x: x[1], reverse=True),
+        " Siege",
+    )
+    print_top(
+        "**Top 5 User, die die meisten Solo-Fights verloren haben:**",
+        sorted([(uid, v["losses"]) for uid, v in fight_stats.items()], key=lambda x: x[1], reverse=True),
+        " Niederlagen",
+    )
+    print_top(
+        "**Top 5 User, die die meisten Solo-Fights gestartet haben:**",
+        sorted([(uid, v["started"]) for uid, v in fight_stats.items()], key=lambda x: x[1], reverse=True),
+        " Kämpfe gestartet",
+    )
+    print_top(
+        "**Top 5 User, die die meisten Solo-Fight Anfragen angenommen haben:**",
+        sorted([(uid, v["accepted"]) for uid, v in fight_stats.items()], key=lambda x: x[1], reverse=True),
+        " Anfragen angenommen",
+    )
+
+    winrate_ranking: list[tuple[str, float]] = []
+    for uid, values in fight_stats.items():
+        if values["fights"] >= 30:
+            winrate = (values["wins"] / values["fights"]) * 100
+            winrate_ranking.append((uid, winrate))
+    winrate_ranking.sort(key=lambda x: x[1], reverse=True)
+    print_top("**Top 5 User, die die höchste Gewinnrate haben(mindestens 30 Fights):**", winrate_ranking, "%")
+
+    print("\n")
+
+    if table_exists(cur, "egg_throws"):
+        throws = cur.execute("SELECT thrower_id, defender_id, success FROM egg_throws").fetchall()
+        print(f"Würfe insgesamt: {len(throws)}")
+
+        print("\n")
+
+        throw_stats: dict[str, dict[str, int]] = {
+            str(user["user_id"]): {"throws": 0, "successful": 0, "hits": 0, "hits_received": 0}
+            for user in users
+        }
+
+        for throw in throws:
+            thrower = str(throw["thrower_id"])
+            defender = str(throw["defender_id"])
+            success = int(throw["success"]) == 1
+
+            if thrower in throw_stats:
+                throw_stats[thrower]["throws"] += 1
+                if success:
+                    throw_stats[thrower]["successful"] += 1
+            if defender in throw_stats:
+                throw_stats[defender]["hits_received"] += 1
+                if success:
+                    throw_stats[defender]["hits"] += 1
+
+    else:
+        print("Würfe insgesamt: aus users-Zählern berechnet (keine egg_throws Tabelle)")
+        print("\n")
+        throw_stats = {
+            str(user["user_id"]): {
+                "throws": int(user["eggs_throwen"]),
+                "successful": int(user["eggs_hit"]),
+                "hits": int(user["own_eggs_hit"]),
+                "hits_received": int(user["eggs_throwen_at"]),
+            }
+            for user in users
+        }
+
+    print_top(
+        "**Top 5 User, die die meisten Eier geworfen haben:**",
+        sorted([(uid, v["throws"]) for uid, v in throw_stats.items()], key=lambda x: x[1], reverse=True),
+        " Würfe",
+    )
+    print_top(
+        "**Top 5 User, die die meisten erfolgreichen Eierwürfe hatten:**",
+        sorted([(uid, v["successful"]) for uid, v in throw_stats.items()], key=lambda x: x[1], reverse=True),
+        " erfolgreiche Würfe",
+    )
+    print_top(
+        "**Top 5 User, die am meisten abgeworfen wurden:**",
+        sorted([(uid, v["hits_received"]) for uid, v in throw_stats.items()], key=lambda x: x[1], reverse=True),
+        " Versuche",
+    )
+    print_top(
+        "**Top 5 User, die am meisten von Eiern getroffen worden:**",
+        sorted([(uid, v["hits"]) for uid, v in throw_stats.items()], key=lambda x: x[1], reverse=True),
+        "x getroffen worden",
+    )
+
+    throwrate_ranking: list[tuple[str, float]] = []
+    for uid, values in throw_stats.items():
+        if values["throws"] >= 30:
+            hitrate = (values["successful"] / values["throws"]) * 100
+            throwrate_ranking.append((uid, hitrate))
+    throwrate_ranking.sort(key=lambda x: x[1], reverse=True)
+    print_top("**Top 5 User, die die höchste Trefferquote haben(mindestens 30 Würfe):**", throwrate_ranking, "%")
+
+    print("\n")
+
+    for location in ["1", "2", "3", "4", "5"]:
+        print(f"An der Location {location} wurde {stat_value(stats, location)} mal gesucht")
+
+    conn.close()
+    print(f"\nTime: {time.strftime('%M:%S', time.gmtime(time.time() - start))}")
+
+
+if __name__ == "__main__":
+    main()
