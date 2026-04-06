@@ -13,10 +13,21 @@ import random
 import requests
 
 import time as tm
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import discord
 
 log = log_helper.create("Game")
 group_fight_running = False
+EVENT_TIMEZONE = os.getenv("EVENT_TIMEZONE", "Europe/Berlin")
+
+
+def get_event_hour() -> int:
+    try:
+        return datetime.now(ZoneInfo(EVENT_TIMEZONE)).hour
+    except Exception:
+        # Fallback to system local time if timezone config is invalid.
+        return tm.localtime().tm_hour
 
 
 
@@ -36,25 +47,25 @@ def is_verified():
     return commands.check(verified)
 
 
-# Normal (22:00 Uhr)
-def is_day():
-    def day(ctx):
-        time = tm.localtime()
-        if time.tm_hour < 6 or time.tm_hour > 23:
-            return False
-        return True
-    return commands.check(day)
-
-# Ende (20:00 Uhr)
+# Normal (06:00 - 00:00 Uhr)
 #def is_day():
 #    def day(ctx):
-#        time = tm.localtime()
-#        if time.tm_hour < 6 or time.tm_hour > 21:
+#        hour = get_event_hour()
+#        if hour < 6 or hour > 23:
 #            return False
 #        return True
 #    return commands.check(day)
 
-# Start 6:00 Uhr Aktuell nach 15 Uhr
+# Ende (06:00 - 22:00 Uhr)
+def is_day():
+    def day(ctx):
+        time = tm.localtime()
+        if time.tm_hour < 6 or time.tm_hour > 21:
+            return False
+        return True
+    return commands.check(day)
+
+# Start (06:00 - 16:00 Uhr)
 #def is_day():
 #    def day(ctx):
 #        time = tm.localtime()
@@ -84,21 +95,21 @@ class Game(commands.Cog):
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 return await ctx.response.send_message(embed=embed, ephemeral=True)
 
-        time = tm.localtime()
+        hour = get_event_hour()
 # Normal (22:00 Uhr)
-        if time.tm_hour < 6 or time.tm_hour > 23:
-            embed = discord.Embed(title="Fehler", description="Der Osterhase versteckt zwischen 0:00 und 6:00 Uhr neue Eier, aus diesem Grund hat deine Oma dich ins Bett geschickt!", color=discord.Color.red())
-            embed.set_footer(text=f"Made by ItsKoga ❤")
-            return await ctx.response.send_message(embed=embed, ephemeral=True)
-
-# Ende (20:00 Uhr)
-#        if time.tm_hour < 6 or time.tm_hour > 21:
-#            embed = discord.Embed(title="Fehler", description="Der osterhase geht nun bis zum nächsten Jahr schlafen!\nDas Event ist nun zu Ende!", color=discord.Color.red())
+    #        if hour < 6 or hour > 23:
+#            embed = discord.Embed(title="Fehler", description="Der Osterhase versteckt zwischen 0:00 und 6:00 Uhr neue Eier, aus diesem Grund hat deine Oma dich ins Bett geschickt!", color=discord.Color.red())
 #            embed.set_footer(text=f"Made by ItsKoga ❤")
 #            return await ctx.response.send_message(embed=embed, ephemeral=True)
+
+# Ende (20:00 Uhr)
+        if hour < 6 or hour > 21:
+            embed = discord.Embed(title="Fehler", description="Der osterhase geht nun bis zum nächsten Jahr schlafen!\nDas Event ist nun zu Ende!", color=discord.Color.red())
+            embed.set_footer(text=f"Made by ItsKoga ❤")
+            return await ctx.response.send_message(embed=embed, ephemeral=True)
         
 # Start 6:00 Uhr Aktuell nach 15 Uhr
-#        if time.tm_hour < 6 or time.tm_hour > 15:
+    #        if hour < 6 or hour > 15:
 #            embed = discord.Embed(title="Fehler", description="Der osterhase schläft noch!\nDas Event startet um 6:00 Uhr!", color=discord.Color.red())
 #            embed.set_footer(text=f"Made by ItsKoga ❤")
 #            return await ctx.response.send_message(embed=embed, ephemeral=True)
