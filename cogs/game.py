@@ -498,7 +498,7 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                         return await self.message.reply("Nicht genug Spieler für den Gruppenkampf!")
                     
                     string = "\n".join([f"- <@{user}>" for user in self.value])
-                    embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!\n**Teilnehmer:({len(self.value)}/4)** \n{string}", color=0xec6726)
+                    embed = discord.Embed(title="Gruppenkampf", description=f"Der Gruppenkampf beginnt!\n**Teilnehmer:({len(self.value)} (minimum 4))** \n{string}", color=0xec6726)
                     embed.set_footer(text=f"Made by ItsKoga ❤")
                     log(f"/group_fight : Gruppenkampf beginnt mit {len(self.value)} Spielern!", "SYSTEM")
                     msg = await self.message.reply(embed=embed)
@@ -621,13 +621,13 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                 await system.Update.last_fight(interaction.user.id)
                 log(f"/group_fight : {interaction.user.name} ist dem Gruppenkampf beigetreten!", "USER_ACTION")
 
-                self.message.embeds[0].set_field_at(0, name=f"Teilnehmer({len(self.value)}/4)", value="\n".join([f"- <@{user}>" for user in self.value]), inline=False)
+                self.message.embeds[0].set_field_at(0, name=f"Teilnehmer({len(self.value)} (minimum 4))", value="\n".join([f"- <@{user}>" for user in self.value]), inline=False)
                 await self.message.edit(embed=self.message.embeds[0])
 
 
         embed = discord.Embed(title="Gruppenkampf", description=f"{ctx.author.mention} hat einen Gruppenkampf gestartet! Möchtest du beitreten? Der Kampf beginnt <t:{int(tm.time()+80)}:R>.\n\
 Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
-        embed.add_field(name="Teilnehmer(1/4)", value=f"- <@{ctx.author.id}>", inline=False)
+        embed.add_field(name="Teilnehmer(1 (minimum 4))", value=f"- <@{ctx.author.id}>", inline=False)
         embed.set_footer(text=f"Made by ItsKoga ❤")
         log(f"/group_fight : Embed wurde erstellt!", "SYSTEM")
         view = View()
