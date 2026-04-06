@@ -757,9 +757,9 @@ class Add:
         await Get.user(id)
 
     @staticmethod
-    async def lose(id, amount):
+    async def tickets(id, amount):
         u = await Get.user(id)
-        # delete one cooked egg pro lose
+        # delete one cooked egg pro ticket
         for _ in range(amount):
             eggs = await Get.type_eggs_not_rotten(id, "cooked")
             if not eggs:

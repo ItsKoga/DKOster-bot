@@ -668,9 +668,9 @@ Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
         log(f"{ctx.author.name} hat seinen Talisman geändert!", "USER_ACTION")
 
 
-    @slash_command(name="lose", description="Tausche ein Gekochtes Ei gegen ein Los", guild_only=True)
+    @slash_command(name="tickets", description="Tausche ein Gekochtes Ei gegen ein Los", guild_only=True)
     @is_day()
-    async def lose(self, ctx, amount: int):
+    async def tickets(self, ctx, amount: int):
         if amount < 1:
             return await ctx.response.send_message("Du musst mindestens 1 <:osterei:962802014226640996> eintauschen!", ephemeral=True)
         if amount > 25:
@@ -679,9 +679,9 @@ Gewettet wird um {bet}x <:Schoko_Ei:1221556659030196284>.", color=0xec6726)
             return await ctx.response.send_message("Du hast kein <:osterei:962802014226640996>!", ephemeral=True)
         if len(await system.Get.type_eggs_not_rotten(ctx.author.id, "cooked")) < amount:
             return await ctx.response.send_message("Du hast nicht genug <:osterei:962802014226640996>!", ephemeral=True)
-        log(f"{ctx.author.name} hat /lose ausgeführt!", "USER_ACTION")
-        await system.Add.lose(ctx.author.id, amount)
-        embed = discord.Embed(title="Verloren", description=f"Du hast {amount}x <:osterei:962802014226640996> eingetauscht!", color=0xec6726)
+        log(f"{ctx.author.name} hat /tickets ausgeführt!", "USER_ACTION")
+        await system.Add.tickets(ctx.author.id, amount)
+        embed = discord.Embed(title="Tickets", description=f"Du hast {amount}x <:osterei:962802014226640996> eingetauscht!", color=0xec6726)
         embed.set_footer(text=f"Made by ItsKoga ❤")
         await ctx.response.send_message(embed=embed, ephemeral=True)
             
