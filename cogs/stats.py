@@ -38,7 +38,7 @@ class Stats(commands.Cog):
         hits = profile.eggs_hit
         throws = profile.eggs_throwen
         own_throws = profile.eggs_throwen_at
-        own_hits = profile.own_eggs_hit
+        own_hits = profile.eggs_hit_at
         times_collected = await system.Get.user_collect_amount(user.id)
         nests_found = await system.Get.user_found_nests(user.id)
         points = system.format_number(await system.Get.points(user.id))

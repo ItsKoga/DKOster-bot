@@ -56,7 +56,7 @@ class UserRow:
     tickets: int = 0
     eggs_throwen: int = 0
     eggs_hit: int = 0
-    own_eggs_hit: int = 0
+    eggs_hit_at: int = 0
     eggs_throwen_at: int = 0
 
 
@@ -189,7 +189,7 @@ class SQLiteCacheDB:
             tickets INTEGER DEFAULT 0,
             eggs_throwen INTEGER DEFAULT 0,
             eggs_hit INTEGER DEFAULT 0,
-            own_eggs_hit INTEGER DEFAULT 0,
+            eggs_hit_at INTEGER DEFAULT 0,
             eggs_throwen_at INTEGER DEFAULT 0
         );
 
@@ -253,7 +253,7 @@ class SQLiteCacheDB:
         self.users.clear()
         async with self.db.execute("""
             SELECT user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count,
-                   notifications, points, cakes, chocolate_eggs, last_fight, used_collect, found_nests, tickets, eggs_throwen, eggs_hit, own_eggs_hit, eggs_throwen_at
+                   notifications, points, cakes, chocolate_eggs, last_fight, used_collect, found_nests, tickets, eggs_throwen, eggs_hit, eggs_hit_at, eggs_throwen_at
             FROM users
         """) as cur:
             rows = await cur.fetchall()
@@ -275,7 +275,7 @@ class SQLiteCacheDB:
                 tickets=r[12],
                 eggs_throwen=r[13],
                 eggs_hit=r[14],
-                own_eggs_hit=r[15],
+                eggs_hit_at=r[15],
                 eggs_throwen_at=r[16]
             )
 
@@ -344,7 +344,7 @@ class SQLiteCacheDB:
                     INSERT INTO users(
                         user_id, last_hit, egg_talisman, rabbit_foot_count, used_rabbit_foot_count,
                         notifications, points, cakes, chocolate_eggs, last_fight, used_collect, found_nests,
-                        tickets, eggs_throwen, eggs_hit, own_eggs_hit, eggs_throwen_at
+                        tickets, eggs_throwen, eggs_hit, eggs_hit_at, eggs_throwen_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(user_id) DO UPDATE SET
                         last_hit=excluded.last_hit,
@@ -361,7 +361,7 @@ class SQLiteCacheDB:
                         tickets=excluded.tickets,
                         eggs_throwen=excluded.eggs_throwen,
                         eggs_hit=excluded.eggs_hit,
-                        own_eggs_hit=excluded.own_eggs_hit,
+                        eggs_hit_at=excluded.eggs_hit_at,
                         eggs_throwen_at=excluded.eggs_throwen_at;
                         
                 """, [
@@ -381,7 +381,7 @@ class SQLiteCacheDB:
                         u.tickets,
                         u.eggs_throwen,
                         u.eggs_hit,
-                        u.own_eggs_hit,
+                        u.eggs_hit_at,
                         u.eggs_throwen_at
                     )
                     for u in users_payload
@@ -814,11 +814,11 @@ class Add:
         defender = await Get.user(defender_id)
 
         thrower.eggs_throwen += 1
-        defender.own_throws += 1
+        defender.eggs_throwen_at
         if success:
-            defender.own_hits += 1
-            thrower.eggs_hit += 1
-            
+            defender.eggs_hit
+            thrower.eggs_hit_at += 1
+
         assert Database.handler is not None
         async with Database.handler._lock:
             Database.handler.dirty_users.add(thrower.user_id)
