@@ -454,9 +454,9 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
         if bet < 4:
             log(f"{ctx.author.name} hat versucht einen Gruppenkampf zu starten, aber zu wenig <:Schoko_Ei:1221556659030196284> gesetzt!", "ERROR")
             return await ctx.response.send_message("Du musst mindestens 4 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
-        if bet > 25:
+        if bet > 150:
             log(f"{ctx.author.name} hat versucht einen Gruppenkampf zu starten, aber zu viele <:Schoko_Ei:1221556659030196284> gesetzt!", "ERROR")
-            return await ctx.response.send_message("Du kannst maximal 25 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
+            return await ctx.response.send_message("Du kannst maximal 150 <:Schoko_Ei:1221556659030196284> setzen!", ephemeral=True)
         if (await system.Get.user(ctx.author.id)).chocolate_eggs < bet:
             log(f"{ctx.author.name} hat versucht einen Gruppenkampf zu starten, aber nicht genug <:Schoko_Ei:1221556659030196284>!", "ERROR")
             return await ctx.response.send_message("Du hast nicht genug <:Schoko_Ei:1221556659030196284>!", ephemeral=True)
@@ -477,9 +477,9 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
                 global group_fight_running
                 try:
                     await self.message.edit(view=None)
-                    if bet*len(self.value) > 500:
+                    if bet*len(self.value) > 2000:
                         group_fight_running = False
-                        return await self.message.reply("Das Maximum an <:Schoko_Ei:1221556659030196284> für einen Gruppenkampf beträgt 500x <:Schoko_Ei:1221556659030196284>!")
+                        return await self.message.reply("Das Maximum an <:Schoko_Ei:1221556659030196284> für einen Gruppenkampf beträgt 2000x <:Schoko_Ei:1221556659030196284>!")
                     
                     for user in self.value:
                         check = await system.Get.type_eggs(user, "cooked")
