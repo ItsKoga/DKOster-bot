@@ -22,6 +22,25 @@ group_fight_running = False
 EVENT_TIMEZONE = os.getenv("EVENT_TIMEZONE", "Europe/Berlin")
 
 
+def _parse_owner_id():
+    raw = (os.getenv("OWNER_ID") or "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        log("OWNER_ID ist keine gültige Zahl, Owner-Funktionen sind deaktiviert!", "ERROR")
+        return None
+
+
+OWNER_ID = _parse_owner_id()
+
+
+class VerificationUnavailable(commands.CheckFailure):
+    """Die Verifizierungs-API ist nicht erreichbar oder hat einen Fehler geliefert."""
+    pass
+
+
 def get_event_hour() -> int:
     try:
         return datetime.now(ZoneInfo(EVENT_TIMEZONE)).hour
@@ -33,13 +52,21 @@ def get_event_hour() -> int:
 
 def is_verified():
     def verified(ctx):
-        url = f"https://combi.dev/API/CheckVerification?ID={ctx.author.id}&key={os.getenv('COMBI_API_KEY')}"
-        response = requests.get(url).json()
+        # URL und Exception-Texte nie loggen, sie enthalten den COMBI_API_KEY
+        try:
+            response = requests.get(
+                "https://combi.dev/API/CheckVerification",
+                params={"ID": ctx.author.id, "key": os.getenv("COMBI_API_KEY")},
+                timeout=5,
+            ).json()
+        except (requests.RequestException, ValueError) as e:
+            log(f"Verifizierung Anfrage für {ctx.author.name} fehlgeschlagen! ({type(e).__name__})", "CRITICAL")
+            raise VerificationUnavailable()
         log(f"Verifizierung Anfrage: {response}", "SYSTEM")
-        if response["success"] == False:
+        if not isinstance(response, dict) or response.get("success") is not True:
             log(f"Bei der Verifizierung Anfrage ist ein Fehler aufgetreten! {response}", "CRITICAL")
-            return True
-        if response["verified"]:
+            raise VerificationUnavailable()
+        if response.get("verified"):
             log(f"{ctx.author.name} ist verifiziert!", "USER_ACTION")
             return True
         log(f"{ctx.author.name} ist nicht verifiziert!", "ERROR")
@@ -94,6 +121,11 @@ class Game(commands.Cog):
                 embed = discord.Embed(title="Fehler", description=f"Du kannst erst <t:{int(tm.time()+error.retry_after)}:R> wieder `/{ctx.command.name}` nutzen!", color=discord.Color.red())
                 embed.set_footer(text=f"Made by ItsKoga ❤")
                 return await ctx.response.send_message(embed=embed, ephemeral=True)
+
+        if isinstance(error, VerificationUnavailable):
+            embed = discord.Embed(title="Fehler", description="Die Verifizierung ist gerade nicht erreichbar, bitte versuche es später erneut.", color=discord.Color.red())
+            embed.set_footer(text=f"Made by ItsKoga ❤")
+            return await ctx.response.send_message(embed=embed, ephemeral=True)
 
         hour = get_event_hour()
 # Normal (22:00 Uhr)
@@ -448,7 +480,7 @@ Und erhält {bet}x <:Schoko_Ei:1221556659030196284> von <@{looser}>.", color=0xe
     @is_day()
     async def group_fight(self, ctx, bet: int):
         global group_fight_running
-        if ctx.author.id == os.getenv("OWNER_ID") and bet == 4444:
+        if OWNER_ID is not None and ctx.author.id == OWNER_ID and bet == 4444:
             group_fight_running = False
             return await ctx.response.send_message("Gruppenkampf wurde zurückgesetzt!", ephemeral=True)
         if group_fight_running == True:
